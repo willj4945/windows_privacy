@@ -1,11 +1,3 @@
-Absolutely — here’s a **robust, professional README.md** for your GitHub page to accompany the **Windows 11 Privacy Toolkit** PowerShell project.
-
-It’s formatted for maximum readability, includes badges, detailed instructions, feature lists, and best practices for contributors and users.
-You can copy-paste this directly into your repo as `README.md`.
-
----
-
-````markdown
 # 🛡️ Windows 11 Privacy Toolkit
 
 ![PowerShell](https://img.shields.io/badge/PowerShell-%230078D7.svg?style=for-the-badge&logo=powershell&logoColor=white)
@@ -179,10 +171,8 @@ If you find this toolkit useful:
 
 ## 📬 Contact
 
-**Author:** [Your Name or GitHub Handle]
-**GitHub:** [https://github.com/yourusername](https://github.com/yourusername)
-**Email:** [[your.email@example.com](mailto:your.email@example.com)]
-
+**Author:** Will Johnson
+**GitHub:** https://github.com/willj4945
 ---
 
 > “Privacy is not about hiding something wrong — it’s about protecting something right.”
