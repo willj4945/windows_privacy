@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
 Windows 11 Privacy Toolkit
-Author: You
+Originial Author: Will Johnson https://github.com/willj4945 
 Description: Interactive menu-based script to help users disable telemetry, ads, tracking, and bloatware safely.
 Version: 1.0
 #>
