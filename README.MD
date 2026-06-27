@@ -51,7 +51,7 @@ The toolkit targets key privacy and data collection areas in Windows 11:
 
 #### 1. Clone the repository
 ```bash
-git clone https://github.com/<yourusername>/Win11PrivacyToolkit.git
+git clone https://github.com/willj4945/Win11PrivacyToolkit.git
 cd Win11PrivacyToolkit
 ````
 
@@ -144,8 +144,7 @@ If you have suggestions or improvements:
 
 ## 💡 Planned Features
 
-* [ ] Arrow-key or checkbox-based TUI (with `Terminal.Gui` or `Out-GridView`)
-* [ ] Dark/Light theme modes
+* [ ] WinForms GUI — checkbox-based interface for non-power users (in progress)
 * [ ] Advanced telemetry rollback system
 * [ ] Optional integration with **O&O ShutUp10++ CLI**
 * [ ] “Safe mode” and “Expert mode” presets

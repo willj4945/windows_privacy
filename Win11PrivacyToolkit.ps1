@@ -44,16 +44,35 @@ function Create-RestorePoint {
 # --- Privacy Tweaks Functions ---
 function Disable-Telemetry {
     Write-Host "`nDisabling Telemetry..." -ForegroundColor Cyan
+
     $keys = @(
-        'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection'
+        'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection',
+        'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection',
+        'HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Policies\DataCollection'
     )
     foreach ($key in $keys) {
         if (-not (Test-Path $key)) { New-Item -Path $key -Force | Out-Null }
         Set-ItemProperty -Path $key -Name "AllowTelemetry" -Value 0 -Type DWord
     }
-    Stop-Service "DiagTrack" -ErrorAction SilentlyContinue
-    Set-Service "DiagTrack" -StartupType Disabled
-    Log "Telemetry disabled."
+
+    foreach ($svc in @("DiagTrack", "dmwappushservice")) {
+        Stop-Service $svc -ErrorAction SilentlyContinue
+        Set-Service  $svc -StartupType Disabled -ErrorAction SilentlyContinue
+    }
+
+    $tasks = @(
+        "\Microsoft\Windows\Application Experience\Microsoft Compatibility Appraiser",
+        "\Microsoft\Windows\Application Experience\ProgramDataUpdater",
+        "\Microsoft\Windows\Autochk\Proxy",
+        "\Microsoft\Windows\Customer Experience Improvement Program\Consolidator",
+        "\Microsoft\Windows\Customer Experience Improvement Program\UsbCeip",
+        "\Microsoft\Windows\DiskDiagnostic\Microsoft-Windows-DiskDiagnosticDataCollector"
+    )
+    foreach ($task in $tasks) {
+        Disable-ScheduledTask -TaskName $task -ErrorAction SilentlyContinue | Out-Null
+    }
+
+    Log "Telemetry disabled (registry, services, scheduled tasks)."
 }
 
 function Disable-Advertising {
