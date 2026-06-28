@@ -107,6 +107,29 @@ function Disable-EdgeSync {
     Log "Edge sync and telemetry disabled."
 }
 
+function Disable-Recall {
+    foreach ($hive in @('HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI',
+                         'HKCU:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI')) {
+        if (-not (Test-Path $hive)) { New-Item -Path $hive -Force | Out-Null }
+        Set-ItemProperty -Path $hive -Name 'DisableAIDataAnalysis' -Value 1 -Type DWord
+    }
+    Log "Windows Recall disabled."
+}
+
+function Disable-CortanaAndBingSearch {
+    $searchPolicy = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search'
+    if (-not (Test-Path $searchPolicy)) { New-Item -Path $searchPolicy -Force | Out-Null }
+    Set-ItemProperty -Path $searchPolicy -Name 'AllowCortana'          -Value 0 -Type DWord
+    Set-ItemProperty -Path $searchPolicy -Name 'AllowCortanaAboveLock' -Value 0 -Type DWord
+    Set-ItemProperty -Path $searchPolicy -Name 'DisableWebSearch'       -Value 1 -Type DWord
+
+    $userSearch = 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Search'
+    if (-not (Test-Path $userSearch)) { New-Item -Path $userSearch -Force | Out-Null }
+    Set-ItemProperty -Path $userSearch -Name 'BingSearchEnabled' -Value 0 -Type DWord
+    Set-ItemProperty -Path $userSearch -Name 'CortanaConsent'    -Value 0 -Type DWord
+    Log "Cortana and Bing Search disabled."
+}
+
 function Debloat-Apps {
     param([int]$Mode)
     if ($Mode -eq 1) {
@@ -141,7 +164,7 @@ function Restore-Defaults {
 
 $form                  = New-Object System.Windows.Forms.Form
 $form.Text             = "Windows 11 Privacy Toolkit"
-$form.Size             = New-Object System.Drawing.Size(500, 640)
+$form.Size             = New-Object System.Drawing.Size(500, 690)
 $form.StartPosition    = "CenterScreen"
 $form.FormBorderStyle  = "FixedDialog"
 $form.MaximizeBox      = $false
@@ -193,7 +216,7 @@ $pnlWarn.Controls.Add($btnRestorePoint)
 $grpPrivacy          = New-Object System.Windows.Forms.GroupBox
 $grpPrivacy.Text     = "Privacy"
 $grpPrivacy.Location = New-Object System.Drawing.Point(12, 96)
-$grpPrivacy.Size     = New-Object System.Drawing.Size(460, 145)
+$grpPrivacy.Size     = New-Object System.Drawing.Size(460, 195)
 $form.Controls.Add($grpPrivacy)
 
 $chkTelemetry          = New-Object System.Windows.Forms.CheckBox
@@ -224,10 +247,24 @@ $chkActivity.Location = New-Object System.Drawing.Point(10, 106)
 $chkActivity.Size     = New-Object System.Drawing.Size(430, 22)
 $grpPrivacy.Controls.Add($chkActivity)
 
+$chkRecall          = New-Object System.Windows.Forms.CheckBox
+$chkRecall.Text     = "Disable Windows Recall (AI Screenshot Feature)"
+$chkRecall.Checked  = $true
+$chkRecall.Location = New-Object System.Drawing.Point(10, 134)
+$chkRecall.Size     = New-Object System.Drawing.Size(430, 22)
+$grpPrivacy.Controls.Add($chkRecall)
+
+$chkBingSearch          = New-Object System.Windows.Forms.CheckBox
+$chkBingSearch.Text     = "Disable Cortana & Bing Search in Start Menu"
+$chkBingSearch.Checked  = $true
+$chkBingSearch.Location = New-Object System.Drawing.Point(10, 162)
+$chkBingSearch.Size     = New-Object System.Drawing.Size(430, 22)
+$grpPrivacy.Controls.Add($chkBingSearch)
+
 # --- Microsoft Services GroupBox ---
 $grpServices          = New-Object System.Windows.Forms.GroupBox
 $grpServices.Text     = "Microsoft Services"
-$grpServices.Location = New-Object System.Drawing.Point(12, 249)
+$grpServices.Location = New-Object System.Drawing.Point(12, 299)
 $grpServices.Size     = New-Object System.Drawing.Size(460, 118)
 $form.Controls.Add($grpServices)
 
@@ -255,7 +292,7 @@ $grpServices.Controls.Add($chkEdge)
 # --- Bloatware GroupBox ---
 $grpBloat          = New-Object System.Windows.Forms.GroupBox
 $grpBloat.Text     = "Bloatware"
-$grpBloat.Location = New-Object System.Drawing.Point(12, 375)
+$grpBloat.Location = New-Object System.Drawing.Point(12, 425)
 $grpBloat.Size     = New-Object System.Drawing.Size(460, 104)
 $form.Controls.Add($grpBloat)
 
@@ -281,7 +318,7 @@ $grpBloat.Controls.Add($rdBloatAll)
 # --- Action Buttons ---
 $btnApply           = New-Object System.Windows.Forms.Button
 $btnApply.Text      = "Apply Selected"
-$btnApply.Location  = New-Object System.Drawing.Point(12, 490)
+$btnApply.Location  = New-Object System.Drawing.Point(12, 540)
 $btnApply.Size      = New-Object System.Drawing.Size(145, 34)
 $btnApply.BackColor = [System.Drawing.Color]::FromArgb(0, 120, 212)
 $btnApply.ForeColor = [System.Drawing.Color]::White
@@ -292,6 +329,8 @@ $btnApply.Add_Click({
     if ($chkAdvertising.Checked) { $taskList.Add({ Disable-Advertising }) }
     if ($chkLocation.Checked)    { $taskList.Add({ Disable-Location }) }
     if ($chkActivity.Checked)    { $taskList.Add({ Disable-ActivityHistory }) }
+    if ($chkRecall.Checked)      { $taskList.Add({ Disable-Recall }) }
+    if ($chkBingSearch.Checked)  { $taskList.Add({ Disable-CortanaAndBingSearch }) }
     if ($chkOneDrive.Checked)    { $taskList.Add({ Disable-OneDrive }) }
     if ($chkBackground.Checked)  { $taskList.Add({ Disable-BackgroundApps }) }
     if ($chkEdge.Checked)        { $taskList.Add({ Disable-EdgeSync }) }
@@ -334,7 +373,7 @@ $form.Controls.Add($btnApply)
 
 $btnRestoreDefaults          = New-Object System.Windows.Forms.Button
 $btnRestoreDefaults.Text     = "Restore Defaults"
-$btnRestoreDefaults.Location = New-Object System.Drawing.Point(165, 490)
+$btnRestoreDefaults.Location = New-Object System.Drawing.Point(165, 540)
 $btnRestoreDefaults.Size     = New-Object System.Drawing.Size(130, 34)
 $btnRestoreDefaults.Add_Click({
     $confirm = [System.Windows.Forms.MessageBox]::Show(
@@ -353,14 +392,14 @@ $form.Controls.Add($btnRestoreDefaults)
 
 $btnExit          = New-Object System.Windows.Forms.Button
 $btnExit.Text     = "Exit"
-$btnExit.Location = New-Object System.Drawing.Point(356, 490)
+$btnExit.Location = New-Object System.Drawing.Point(356, 540)
 $btnExit.Size     = New-Object System.Drawing.Size(116, 34)
 $btnExit.Add_Click({ $form.Close() })
 $form.Controls.Add($btnExit)
 
 # --- Status Area ---
 $sep           = New-Object System.Windows.Forms.Panel
-$sep.Location  = New-Object System.Drawing.Point(0, 534)
+$sep.Location  = New-Object System.Drawing.Point(0, 584)
 $sep.Size      = New-Object System.Drawing.Size(500, 1)
 $sep.BackColor = [System.Drawing.Color]::Silver
 $form.Controls.Add($sep)
@@ -368,12 +407,12 @@ $form.Controls.Add($sep)
 $lblStatus           = New-Object System.Windows.Forms.Label
 $lblStatus.Text      = "Status: Ready"
 $lblStatus.ForeColor = [System.Drawing.Color]::Gray
-$lblStatus.Location  = New-Object System.Drawing.Point(12, 543)
+$lblStatus.Location  = New-Object System.Drawing.Point(12, 593)
 $lblStatus.Size      = New-Object System.Drawing.Size(460, 18)
 $form.Controls.Add($lblStatus)
 
 $progressBar          = New-Object System.Windows.Forms.ProgressBar
-$progressBar.Location = New-Object System.Drawing.Point(12, 567)
+$progressBar.Location = New-Object System.Drawing.Point(12, 617)
 $progressBar.Size     = New-Object System.Drawing.Size(460, 16)
 $progressBar.Style    = "Continuous"
 $form.Controls.Add($progressBar)
