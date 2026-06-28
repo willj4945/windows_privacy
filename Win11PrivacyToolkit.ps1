@@ -21,7 +21,7 @@ if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 }
 
 # --- Global Config ---
-$LogFile = "$env:USERPROFILE\Documents\Win11PrivacyToolkit_Log.txt"
+$LogFile = "$PSScriptRoot\Win11PrivacyToolkit_Log.txt"
 "=== Win11PrivacyToolkit Run @ $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') ===" | Out-File $LogFile -Append
 
 . "$PSScriptRoot\Win11PrivacyFunctions.ps1"

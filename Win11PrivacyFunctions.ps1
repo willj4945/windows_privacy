@@ -1,5 +1,9 @@
 function Log($msg) {
-    "$((Get-Date).ToString('HH:mm:ss')) - $msg" | Out-File $LogFile -Append
+    try {
+        "$((Get-Date).ToString('HH:mm:ss')) - $msg" | Out-File $LogFile -Append
+    } catch {
+        Write-Warning "Log write failed: $_"
+    }
 }
 
 function New-RestorePoint {
