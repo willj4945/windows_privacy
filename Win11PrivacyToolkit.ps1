@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
 Windows 11 Privacy Toolkit
 Original Author: Will Johnson https://github.com/willj4945
