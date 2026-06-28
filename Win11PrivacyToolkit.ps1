@@ -427,14 +427,14 @@ $grpSecurity.Size     = New-Object System.Drawing.Size(472, 173)
 $tabSecurity.Controls.Add($grpSecurity)
 
 $chkSmb1          = New-Object System.Windows.Forms.CheckBox
-$chkSmb1.Text     = "Disable SMBv1  (Legacy Protocol — Ransomware Risk)"
+$chkSmb1.Text     = 'Disable SMBv1 (Legacy Protocol - Ransomware Risk)'
 $chkSmb1.Checked  = $true
 $chkSmb1.Location = New-Object System.Drawing.Point(10, 22)
 $chkSmb1.Size     = New-Object System.Drawing.Size(450, 22)
 $grpSecurity.Controls.Add($chkSmb1)
 
 $chkNetProtect          = New-Object System.Windows.Forms.CheckBox
-$chkNetProtect.Text     = "Enable Network Protection  (Block Malicious Domains)"
+$chkNetProtect.Text     = 'Enable Network Protection (Block Malicious Domains)'
 $chkNetProtect.Checked  = $true
 $chkNetProtect.Location = New-Object System.Drawing.Point(10, 50)
 $chkNetProtect.Size     = New-Object System.Drawing.Size(450, 22)
