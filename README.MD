@@ -2,7 +2,7 @@
 
 ![PowerShell](https://img.shields.io/badge/PowerShell-%230078D7.svg?style=for-the-badge&logo=powershell&logoColor=white)
 ![Windows 11](https://img.shields.io/badge/Windows%2011-0078D6?style=for-the-badge&logo=windows11&logoColor=white)
-![PSScriptAnalyzer](https://img.shields.io/github/actions/workflow/status/willj4945/windows_privacy/psscriptanalyzer.yml?label=PSScriptAnalyzer&style=for-the-badge)
+![CI](https://img.shields.io/github/actions/workflow/status/willj4945/windows_privacy/psscriptanalyzer.yml?label=CI&style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
 > **Windows 11 Privacy Toolkit** is a GUI-based PowerShell utility that helps users harden their privacy and security on Windows 11 — with no coding required. Changes are applied selectively via checkboxes, logged to disk, and reversible via a built-in restore point.
@@ -85,6 +85,8 @@ git clone https://github.com/willj4945/windows_privacy.git
 cd windows_privacy
 ```
 
+> **Note:** Both `Win11PrivacyToolkit.ps1` and `Win11PrivacyFunctions.ps1` must remain in the same directory. The main script dot-sources the functions file at startup.
+
 #### 2. Allow script execution (current session only)
 
 ```powershell
@@ -121,13 +123,24 @@ To undo registry and service changes, click **Restore Defaults** or roll back vi
 
 ## 🔧 CI / Code Quality
 
-Every push and pull request runs [PSScriptAnalyzer](https://github.com/PowerShell/PSScriptAnalyzer) against the script via GitHub Actions. The workflow fails on any `Error` or `Warning` severity finding.
+Every push and pull request runs two jobs via GitHub Actions:
 
-To run the check locally:
+| Job | Tool | What it checks |
+| --- | --- | --- |
+| lint | [PSScriptAnalyzer](https://github.com/PowerShell/PSScriptAnalyzer) | `Error` and `Warning` findings across both `.ps1` files |
+| test | [Pester 5](https://pester.dev) | Unit tests for all backend functions (registry paths, values, service calls) |
+
+To run the checks locally:
 
 ```powershell
+# Lint
 Install-Module PSScriptAnalyzer -Scope CurrentUser -Force
-Invoke-ScriptAnalyzer -Path .\Win11PrivacyToolkit.ps1 -Severity Error,Warning
+Invoke-ScriptAnalyzer -Path .\Win11PrivacyFunctions.ps1 -Severity Error,Warning
+Invoke-ScriptAnalyzer -Path .\Win11PrivacyToolkit.ps1   -Severity Error,Warning
+
+# Tests
+Install-Module Pester -MinimumVersion 5.0 -Scope CurrentUser -Force
+Invoke-Pester -Path .\tests -Output Detailed
 ```
 
 ---

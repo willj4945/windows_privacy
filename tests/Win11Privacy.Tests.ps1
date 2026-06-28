@@ -1,9 +1,18 @@
 #Requires -Module Pester
 
 BeforeAll {
-    # Provide a temp log file so Log {} has a valid path if ever called un-mocked
     $script:LogFile = [System.IO.Path]::GetTempFileName()
-    . "$PSScriptRoot\..\Win11PrivacyFunctions.ps1"
+
+    # Stub Windows-only commands so Pester can mock them on Linux CI runners
+    foreach ($cmd in @('reg', 'Checkpoint-Computer', 'Get-AppxPackage',
+                        'Remove-AppxPackage', 'Disable-ScheduledTask',
+                        'Disable-WindowsOptionalFeature', 'Set-MpPreference')) {
+        if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) {
+            $null = New-Item -Path "Function:\$cmd" -Value {}
+        }
+    }
+
+    . (Join-Path $PSScriptRoot '..' 'Win11PrivacyFunctions.ps1')
 }
 
 AfterAll {
