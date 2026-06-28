@@ -133,6 +133,7 @@ function Disable-CortanaAndBingSearch {
 }
 
 function Remove-BloatApp {
+    [CmdletBinding(SupportsShouldProcess)]
     param([int]$Mode)
     if ($Mode -eq 1) {
         $apps = @(
