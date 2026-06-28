@@ -30,6 +30,8 @@ function Log($msg) {
 
 # --- Utility ---
 function New-RestorePoint {
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
     try {
         Checkpoint-Computer -Description "Pre-PrivacyToolkit" -RestorePointType "MODIFY_SETTINGS"
         Log "Restore point created."
@@ -94,7 +96,7 @@ function Disable-OneDrive {
     Log "OneDrive disabled."
 }
 
-function Disable-BackgroundApps {
+function Disable-BackgroundApp {
     reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" /v GlobalUserDisabled /t REG_DWORD /d 1 /f | Out-Null
     Log "Background apps disabled."
 }
@@ -130,7 +132,7 @@ function Disable-CortanaAndBingSearch {
     Log "Cortana and Bing Search disabled."
 }
 
-function Debloat-Apps {
+function Remove-BloatApp {
     param([int]$Mode)
     if ($Mode -eq 1) {
         $apps = @(
@@ -151,7 +153,7 @@ function Debloat-Apps {
     }
 }
 
-function Restore-Defaults {
+function Restore-Default {
     Remove-Item "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection" -Recurse -ErrorAction SilentlyContinue
     Remove-Item "HKLM:\SOFTWARE\Policies\Microsoft\Windows\OneDrive"       -Recurse -ErrorAction SilentlyContinue
     Remove-Item "HKLM:\SOFTWARE\Policies\Microsoft\Windows\System"         -Recurse -ErrorAction SilentlyContinue
@@ -332,10 +334,10 @@ $btnApply.Add_Click({
     if ($chkRecall.Checked)      { $taskList.Add({ Disable-Recall }) }
     if ($chkBingSearch.Checked)  { $taskList.Add({ Disable-CortanaAndBingSearch }) }
     if ($chkOneDrive.Checked)    { $taskList.Add({ Disable-OneDrive }) }
-    if ($chkBackground.Checked)  { $taskList.Add({ Disable-BackgroundApps }) }
+    if ($chkBackground.Checked)  { $taskList.Add({ Disable-BackgroundApp }) }
     if ($chkEdge.Checked)        { $taskList.Add({ Disable-EdgeSync }) }
-    if ($rdBloatCommon.Checked)  { $taskList.Add({ Debloat-Apps -Mode 1 }) }
-    elseif ($rdBloatAll.Checked) { $taskList.Add({ Debloat-Apps -Mode 2 }) }
+    if ($rdBloatCommon.Checked)  { $taskList.Add({ Remove-BloatApp -Mode 1 }) }
+    elseif ($rdBloatAll.Checked) { $taskList.Add({ Remove-BloatApp -Mode 2 }) }
 
     if ($taskList.Count -eq 0) {
         [System.Windows.Forms.MessageBox]::Show(
@@ -384,7 +386,7 @@ $btnRestoreDefaults.Add_Click({
     if ($confirm -eq [System.Windows.Forms.DialogResult]::Yes) {
         $lblStatus.Text = "Status: Restoring defaults..."
         [System.Windows.Forms.Application]::DoEvents()
-        Restore-Defaults
+        Restore-Default
         $lblStatus.Text = "Status: Defaults restored. Reboot recommended."
     }
 })
