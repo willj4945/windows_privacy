@@ -1,4 +1,4 @@
-name: PSScriptAnalyzer
+name: CI
 
 on:
   push:
@@ -8,6 +8,7 @@ on:
 
 jobs:
   lint:
+    name: PSScriptAnalyzer
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,9 +20,40 @@ jobs:
       - name: Run PSScriptAnalyzer
         shell: pwsh
         run: |
-          $results = Invoke-ScriptAnalyzer -Path ./Win11PrivacyToolkit.ps1 -Severity Error,Warning
-          if ($results) {
-            $results | Format-Table -AutoSize
+          $files  = @('Win11PrivacyToolkit.ps1', 'Win11PrivacyFunctions.ps1')
+          $issues = $files | ForEach-Object {
+            Invoke-ScriptAnalyzer -Path $_ -Severity Error,Warning
+          }
+          if ($issues) {
+            $issues | Format-Table -AutoSize
             exit 1
           }
           Write-Host "No issues found."
+
+  test:
+    name: Pester
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Pester
+        shell: pwsh
+        run: Install-Module -Name Pester -MinimumVersion 5.0 -Force -Scope CurrentUser
+
+      - name: Run Pester tests
+        shell: pwsh
+        run: |
+          $config = New-PesterConfiguration
+          $config.Run.Path          = './tests'
+          $config.Output.Verbosity  = 'Detailed'
+          $config.TestResult.Enabled    = $true
+          $config.TestResult.OutputPath = 'test-results.xml'
+          $result = Invoke-Pester -Configuration $config
+          if ($result.FailedCount -gt 0) { exit 1 }
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pester-results
+          path: test-results.xml
