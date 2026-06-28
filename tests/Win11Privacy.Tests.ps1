@@ -2,16 +2,6 @@
 
 BeforeAll {
     $script:LogFile = [System.IO.Path]::GetTempFileName()
-
-    # Stub Windows-only commands so Pester can mock them on Linux CI runners
-    foreach ($cmd in @('reg', 'Checkpoint-Computer', 'Get-AppxPackage',
-                        'Remove-AppxPackage', 'Disable-ScheduledTask',
-                        'Disable-WindowsOptionalFeature', 'Set-MpPreference')) {
-        if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) {
-            $null = New-Item -Path "Function:\$cmd" -Value {}
-        }
-    }
-
     . (Join-Path $PSScriptRoot '..' 'Win11PrivacyFunctions.ps1')
 }
 
