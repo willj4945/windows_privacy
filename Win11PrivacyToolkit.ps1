@@ -26,6 +26,55 @@ $LogFile = "$PSScriptRoot\Win11PrivacyToolkit_Log.txt"
 
 . "$PSScriptRoot\Win11PrivacyFunctions.ps1"
 
+# --- Scrollable confirmation dialog (used for long app-removal lists) ---
+function Show-AppRemovalConfirmDialog {
+    param(
+        [Parameter(Mandatory)][string[]] $AppNames
+    )
+
+    $dlg                 = New-Object System.Windows.Forms.Form
+    $dlg.Text             = "Confirm App Removal"
+    $dlg.Size             = New-Object System.Drawing.Size(480, 520)
+    $dlg.StartPosition    = "CenterScreen"
+    $dlg.FormBorderStyle  = "FixedDialog"
+    $dlg.MaximizeBox      = $false
+    $dlg.MinimizeBox      = $false
+    $dlg.Font             = New-Object System.Drawing.Font("Segoe UI", 9)
+
+    $lbl           = New-Object System.Windows.Forms.Label
+    $lbl.Text      = "The following $($AppNames.Count) app(s) will be removed:"
+    $lbl.Location  = New-Object System.Drawing.Point(12, 12)
+    $lbl.Size      = New-Object System.Drawing.Size(440, 20)
+    $dlg.Controls.Add($lbl)
+
+    $lst              = New-Object System.Windows.Forms.ListBox
+    $lst.Location     = New-Object System.Drawing.Point(12, 36)
+    $lst.Size         = New-Object System.Drawing.Size(440, 380)
+    $lst.SelectionMode = "None"
+    $lst.HorizontalScrollbar = $true
+    foreach ($app in $AppNames) { [void]$lst.Items.Add($app) }
+    $dlg.Controls.Add($lst)
+
+    $btnYes           = New-Object System.Windows.Forms.Button
+    $btnYes.Text      = "Yes"
+    $btnYes.Location  = New-Object System.Drawing.Point(278, 428)
+    $btnYes.Size      = New-Object System.Drawing.Size(85, 30)
+    $btnYes.DialogResult = [System.Windows.Forms.DialogResult]::Yes
+    $dlg.Controls.Add($btnYes)
+
+    $btnNo            = New-Object System.Windows.Forms.Button
+    $btnNo.Text       = "No"
+    $btnNo.Location   = New-Object System.Drawing.Point(367, 428)
+    $btnNo.Size       = New-Object System.Drawing.Size(85, 30)
+    $btnNo.DialogResult = [System.Windows.Forms.DialogResult]::No
+    $dlg.Controls.Add($btnNo)
+
+    $dlg.AcceptButton = $btnYes
+    $dlg.CancelButton = $btnNo
+
+    return $dlg.ShowDialog()
+}
+
 # =============================================================================
 # GUI
 # =============================================================================
@@ -416,16 +465,7 @@ $btnApply.Add_Click({
     if ($rdBloatAll.Checked) {
         $appsToRemove = Get-AppsToRemove -Mode 2
         if ($appsToRemove.Count -gt 0) {
-            $preview = $appsToRemove | Select-Object -First 25
-            $previewText = $preview -join "`n"
-            if ($appsToRemove.Count -gt 25) {
-                $previewText += "`n...and $($appsToRemove.Count - 25) more"
-            }
-            $confirm = [System.Windows.Forms.MessageBox]::Show(
-                "The following $($appsToRemove.Count) app(s) will be removed:`n`n$previewText",
-                "Confirm App Removal",
-                [System.Windows.Forms.MessageBoxButtons]::YesNo,
-                [System.Windows.Forms.MessageBoxIcon]::Warning)
+            $confirm = Show-AppRemovalConfirmDialog -AppNames $appsToRemove
             if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes) { return }
         }
     }
