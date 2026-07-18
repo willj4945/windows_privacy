@@ -69,7 +69,9 @@ Opens automatically when the app launches and shows your current Privacy Score �
 | --- | --- |
 | Skip | No app removal |
 | Common bloatware | Removes Xbox, Teams (consumer), News, Clipchamp, YourPhone, Feedback Hub, BingWeather, Game Bar, and more |
-| All Microsoft Store apps | Removes every Microsoft Store app except Windows Store, Desktop App Installer, and Calculator |
+| All Microsoft Store apps | Removes non-essential Microsoft-published apps only — see below |
+
+**"All Microsoft Store apps" is scoped for safety.** It only ever considers packages published by Microsoft (third-party Store games and dev tools you installed yourself are never touched, since they carry a different publisher). It also skips a built-in protected list of Windows shell, sign-in, security, and runtime-framework components (e.g. Start Menu, lock screen, credential prompts, Defender's UI, VCLibs/.NET runtime packages) plus a few Microsoft-published dev tools worth keeping by default (Windows Terminal, PowerShell, Dev Home, WSL). Before anything is removed, a confirmation dialog lists exactly which apps will go, so you can back out first.
 
 ---
 
@@ -156,6 +158,7 @@ Invoke-Pester -Path .\tests -Output Detailed
 > **Use at your own risk.**
 > This script modifies Windows registry values, services, and optional features. While every option has been tested for safety, results may vary depending on your Windows build and configuration.
 > Always create a restore point before applying changes — the toolkit makes this easy with the button at the top of the window.
+> The "All Microsoft Store apps" removal option shows a confirmation list of exactly what will be removed before it runs — review it before clicking Yes.
 
 ---
 

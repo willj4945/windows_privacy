@@ -198,18 +198,54 @@ function Get-CommonBloatwareList {
     )
 }
 
+function Get-ProtectedAppxPackages {
+    @(
+        # Shell / sign-in critical
+        'Microsoft.Windows.StartMenuExperienceHost', 'Microsoft.Windows.ShellExperienceHost',
+        'Microsoft.LockApp', 'Microsoft.CredDialogHost', 'Microsoft.AccountsControl',
+        'Microsoft.AAD.BrokerPlugin', 'Microsoft.Windows.CloudExperienceHost',
+        'Microsoft.Windows.PinningConfirmationDialog', 'Microsoft.Windows.SecureAssessmentBrowser',
+        'Microsoft.Windows.CapturePicker', 'Microsoft.Windows.NarratorQuickStart',
+        'Microsoft.Windows.ParentalControls', 'Microsoft.Windows.PeopleExperienceHost',
+        'Microsoft.Win32WebViewHost', 'MicrosoftWindows.Client.CBS',
+        'MicrosoftWindows.Client.WebExperience', 'Microsoft.Windows.CBSPreview', 'NcsiUwpApp',
+        # Security
+        'Microsoft.Windows.SecHealthUI', 'Microsoft.SecHealthUI',
+        # Runtime frameworks (version is baked into the Name, so these need wildcards)
+        'Microsoft.VCLibs*', 'Microsoft.NET.Native.Runtime*', 'Microsoft.NET.Native.Framework*',
+        'Microsoft.UI.Xaml*', 'Microsoft.WindowsAppRuntime*', 'Microsoft.Services.Store.Engagement',
+        'Microsoft.Advertising.Xaml',
+        # Kept by default / dev tools worth protecting even though Microsoft-published
+        'Microsoft.WindowsStore', 'Microsoft.DesktopAppInstaller', 'Microsoft.WindowsCalculator',
+        'Microsoft.WindowsNotepad', 'Microsoft.WindowsTerminal*', 'Microsoft.PowerShell*',
+        'Microsoft.Windows.DevHome*', 'MicrosoftCorporationII.WindowsSubsystemForLinux'
+    )
+}
+
+function Test-ProtectedAppxPackage {
+    param([string]$Name)
+    foreach ($pattern in Get-ProtectedAppxPackages) {
+        if ($Name -like $pattern) { return $true }
+    }
+    return $false
+}
+
+function Get-AppsToRemove {
+    param([int]$Mode)
+    if ($Mode -eq 1) {
+        return Get-CommonBloatwareList
+    } elseif ($Mode -eq 2) {
+        return (Get-AppxPackage -AllUsers | Where-Object {
+            $_.Publisher -like '*Microsoft Corporation*' -and -not (Test-ProtectedAppxPackage $_.Name)
+        }).Name
+    }
+    return @()
+}
+
 function Remove-BloatApp {
     [CmdletBinding(SupportsShouldProcess)]
     param([int]$Mode)
-    if ($Mode -eq 1) {
-        $apps = Get-CommonBloatwareList
-    } elseif ($Mode -eq 2) {
-        $apps = (Get-AppxPackage -AllUsers | Where-Object {
-            $_.Name -notmatch "Microsoft.WindowsStore|Microsoft.DesktopAppInstaller|Microsoft.WindowsCalculator"
-        }).Name
-    } else { return }
-
-    foreach ($app in $apps) {
+    foreach ($app in Get-AppsToRemove -Mode $Mode) {
         Get-AppxPackage -Name $app -AllUsers | Remove-AppxPackage -ErrorAction SilentlyContinue
         Log "Removed app: $app"
     }

@@ -413,6 +413,23 @@ $btnApply.Add_Click({
         return
     }
 
+    if ($rdBloatAll.Checked) {
+        $appsToRemove = Get-AppsToRemove -Mode 2
+        if ($appsToRemove.Count -gt 0) {
+            $preview = $appsToRemove | Select-Object -First 25
+            $previewText = $preview -join "`n"
+            if ($appsToRemove.Count -gt 25) {
+                $previewText += "`n...and $($appsToRemove.Count - 25) more"
+            }
+            $confirm = [System.Windows.Forms.MessageBox]::Show(
+                "The following $($appsToRemove.Count) app(s) will be removed:`n`n$previewText",
+                "Confirm App Removal",
+                [System.Windows.Forms.MessageBoxButtons]::YesNo,
+                [System.Windows.Forms.MessageBoxIcon]::Warning)
+            if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes) { return }
+        }
+    }
+
     $btnApply.Enabled           = $false
     $btnRestoreDefaults.Enabled = $false
     $progressBar.Maximum        = $taskList.Count

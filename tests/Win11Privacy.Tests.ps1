@@ -316,12 +316,15 @@ Describe 'Remove-BloatApp' {
 
     Context 'Mode 2 (all non-essential apps)' {
         BeforeEach {
+            $msPublisher = 'CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US'
             $fakePackages = @(
-                [PSCustomObject]@{ Name = 'Microsoft.WindowsStore' },
-                [PSCustomObject]@{ Name = 'Microsoft.DesktopAppInstaller' },
-                [PSCustomObject]@{ Name = 'Microsoft.WindowsCalculator' },
-                [PSCustomObject]@{ Name = 'Microsoft.BingNews' },
-                [PSCustomObject]@{ Name = 'Microsoft.XboxApp' }
+                [PSCustomObject]@{ Name = 'Microsoft.WindowsStore'; Publisher = $msPublisher }
+                [PSCustomObject]@{ Name = 'Microsoft.DesktopAppInstaller'; Publisher = $msPublisher }
+                [PSCustomObject]@{ Name = 'Microsoft.WindowsCalculator'; Publisher = $msPublisher }
+                [PSCustomObject]@{ Name = 'Microsoft.BingNews'; Publisher = $msPublisher }
+                [PSCustomObject]@{ Name = 'Microsoft.XboxApp'; Publisher = $msPublisher }
+                [PSCustomObject]@{ Name = 'Microsoft.Windows.StartMenuExperienceHost'; Publisher = $msPublisher }
+                [PSCustomObject]@{ Name = 'Valve.Steam'; Publisher = 'CN=Valve Corporation, O=Valve Corporation, L=Bellevue, S=Washington, C=US' }
             )
             Mock Get-AppxPackage { $fakePackages } -ParameterFilter { $AllUsers -eq $true }
         }
@@ -341,6 +344,18 @@ Describe 'Remove-BloatApp' {
             Remove-BloatApp -Mode 2
             Should -Invoke Get-AppxPackage -ParameterFilter { $Name -eq 'Microsoft.BingNews' }
         }
+        It 'excludes shell components like StartMenuExperienceHost even though Microsoft-published' {
+            Remove-BloatApp -Mode 2
+            Should -Invoke Get-AppxPackage -Times 0 -ParameterFilter {
+                $Name -eq 'Microsoft.Windows.StartMenuExperienceHost'
+            }
+        }
+        It 'excludes third-party packages such as a Steam-published game' {
+            Remove-BloatApp -Mode 2
+            Should -Invoke Get-AppxPackage -Times 0 -ParameterFilter {
+                $Name -eq 'Valve.Steam'
+            }
+        }
     }
 
     Context 'Mode 0 (invalid / skip)' {
@@ -348,6 +363,44 @@ Describe 'Remove-BloatApp' {
             Remove-BloatApp -Mode 0
             Should -Invoke Get-AppxPackage -Times 0
         }
+    }
+}
+
+# ---------------------------------------------------------------------------
+Describe 'Test-ProtectedAppxPackage' {
+    It 'returns $true for an exact protected name' {
+        Test-ProtectedAppxPackage -Name 'Microsoft.LockApp' | Should -Be $true
+    }
+    It 'returns $true for a versioned framework name matching a wildcard pattern' {
+        Test-ProtectedAppxPackage -Name 'Microsoft.VCLibs.140.00.UWPDesktop' | Should -Be $true
+    }
+    It 'returns $false for an unrelated package name' {
+        Test-ProtectedAppxPackage -Name 'Microsoft.BingNews' | Should -Be $false
+    }
+}
+
+# ---------------------------------------------------------------------------
+Describe 'Get-AppsToRemove' {
+    It 'Mode 1 returns the common bloatware list' {
+        (Get-AppsToRemove -Mode 1) | Should -Be (Get-CommonBloatwareList)
+    }
+    It 'Mode 2 excludes protected and non-Microsoft-published packages' {
+        $msPublisher = 'CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US'
+        Mock Get-AppxPackage {
+            @(
+                [PSCustomObject]@{ Name = 'Microsoft.BingNews'; Publisher = $msPublisher }
+                [PSCustomObject]@{ Name = 'Microsoft.LockApp'; Publisher = $msPublisher }
+                [PSCustomObject]@{ Name = 'Valve.Steam'; Publisher = 'CN=Valve Corporation' }
+            )
+        } -ParameterFilter { $AllUsers -eq $true }
+
+        $result = Get-AppsToRemove -Mode 2
+        $result | Should -Contain 'Microsoft.BingNews'
+        $result | Should -Not -Contain 'Microsoft.LockApp'
+        $result | Should -Not -Contain 'Valve.Steam'
+    }
+    It 'Mode 0 returns an empty list' {
+        (Get-AppsToRemove -Mode 0).Count | Should -Be 0
     }
 }
 
