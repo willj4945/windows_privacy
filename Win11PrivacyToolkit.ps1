@@ -87,6 +87,96 @@ $tabCtrl.Size     = New-Object System.Drawing.Size(498, 490)
 $form.Controls.Add($tabCtrl)
 
 # =============================================================================
+# TAB: Scan
+# =============================================================================
+$tabScan      = New-Object System.Windows.Forms.TabPage
+$tabScan.Text = "Scan"
+$tabCtrl.Controls.Add($tabScan)
+
+$pnlScoreHeader             = New-Object System.Windows.Forms.Panel
+$pnlScoreHeader.Location    = New-Object System.Drawing.Point(8, 8)
+$pnlScoreHeader.Size        = New-Object System.Drawing.Size(472, 70)
+$pnlScoreHeader.BorderStyle = "FixedSingle"
+$tabScan.Controls.Add($pnlScoreHeader)
+
+$lblScoreBig          = New-Object System.Windows.Forms.Label
+$lblScoreBig.Text     = "Privacy Score: --"
+$lblScoreBig.Font     = New-Object System.Drawing.Font("Segoe UI", 14, [System.Drawing.FontStyle]::Bold)
+$lblScoreBig.Location = New-Object System.Drawing.Point(10, 8)
+$lblScoreBig.Size     = New-Object System.Drawing.Size(450, 30)
+$pnlScoreHeader.Controls.Add($lblScoreBig)
+
+$lblRating          = New-Object System.Windows.Forms.Label
+$lblRating.Text     = "Click Run Scan to check your current privacy status."
+$lblRating.Location = New-Object System.Drawing.Point(10, 42)
+$lblRating.Size     = New-Object System.Drawing.Size(450, 22)
+$pnlScoreHeader.Controls.Add($lblRating)
+
+$lvResults               = New-Object System.Windows.Forms.ListView
+$lvResults.Location      = New-Object System.Drawing.Point(8, 86)
+$lvResults.Size          = New-Object System.Drawing.Size(472, 340)
+$lvResults.View          = "Details"
+$lvResults.FullRowSelect = $true
+$lvResults.GridLines     = $true
+$lvResults.Columns.Add("Category", 140) | Out-Null
+$lvResults.Columns.Add("Setting", 232)  | Out-Null
+$lvResults.Columns.Add("Status", 90)    | Out-Null
+$tabScan.Controls.Add($lvResults)
+
+$btnRunScan          = New-Object System.Windows.Forms.Button
+$btnRunScan.Text     = "Run Scan"
+$btnRunScan.Location = New-Object System.Drawing.Point(8, 432)
+$btnRunScan.Size     = New-Object System.Drawing.Size(150, 26)
+$tabScan.Controls.Add($btnRunScan)
+
+$lblLastScan          = New-Object System.Windows.Forms.Label
+$lblLastScan.Text     = "Last scanned: never"
+$lblLastScan.ForeColor = [System.Drawing.Color]::Gray
+$lblLastScan.Location = New-Object System.Drawing.Point(166, 437)
+$lblLastScan.Size     = New-Object System.Drawing.Size(314, 20)
+$tabScan.Controls.Add($lblLastScan)
+
+function Update-ScanUI {
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
+    if (-not $PSCmdlet.ShouldProcess('Scan tab', 'Refresh privacy score')) { return }
+
+    $scan = Invoke-PrivacyScan
+
+    $lblScoreBig.Text = "Privacy Score: $($scan.ScorePercent)% ($($scan.Rating))"
+    $lblRating.Text   = "$($scan.PassedChecks) of $($scan.TotalChecks) checks passed"
+
+    switch ($scan.Rating) {
+        'Excellent' { $bg = [System.Drawing.Color]::FromArgb(212, 237, 218); $fg = [System.Drawing.Color]::FromArgb(30, 90, 40) }
+        'Good'      { $bg = [System.Drawing.Color]::FromArgb(204, 229, 255); $fg = [System.Drawing.Color]::FromArgb(0, 90, 160) }
+        'Fair'      { $bg = [System.Drawing.Color]::FromArgb(255, 229, 204); $fg = [System.Drawing.Color]::FromArgb(170, 90, 0) }
+        default     { $bg = [System.Drawing.Color]::FromArgb(248, 215, 218); $fg = [System.Drawing.Color]::FromArgb(150, 30, 30) }
+    }
+    $pnlScoreHeader.BackColor = $bg
+    $lblScoreBig.ForeColor    = $fg
+    $lblRating.ForeColor      = $fg
+
+    $lvResults.Items.Clear()
+    foreach ($r in $scan.Results) {
+        $item = New-Object System.Windows.Forms.ListViewItem($r.Category)
+        $item.SubItems.Add($r.Name) | Out-Null
+        if ($r.Passed) {
+            $item.SubItems.Add("Hardened") | Out-Null
+            $item.ForeColor = [System.Drawing.Color]::FromArgb(30, 120, 40)
+        } else {
+            $item.SubItems.Add("Not Hardened") | Out-Null
+            $item.ForeColor = [System.Drawing.Color]::FromArgb(180, 30, 30)
+        }
+        $lvResults.Items.Add($item) | Out-Null
+    }
+
+    $lblLastScan.Text = "Last scanned: $((Get-Date).ToString('HH:mm:ss'))"
+}
+
+$btnRunScan.Add_Click({ Update-ScanUI })
+$form.Add_Shown({ Update-ScanUI })
+
+# =============================================================================
 # TAB: Privacy
 # =============================================================================
 $tabPrivacy      = New-Object System.Windows.Forms.TabPage
@@ -339,6 +429,9 @@ $btnApply.Add_Click({
     $lblStatus.Text             = "Status: Done. Log saved to: $LogFile"
     $btnApply.Enabled           = $true
     $btnRestoreDefaults.Enabled = $true
+
+    Update-ScanUI
+    $tabCtrl.SelectedTab = $tabScan
 
     [System.Windows.Forms.MessageBox]::Show(
         "All selected changes have been applied.`n`nA restart is recommended to complete the changes.",

@@ -185,20 +185,24 @@ function Disable-AutoRun {
 }
 
 # --- Bloatware ---
+function Get-CommonBloatwareList {
+    @(
+        "Microsoft.XboxApp", "Microsoft.GetHelp", "Microsoft.Getstarted",
+        "Microsoft.Microsoft3DViewer", "Microsoft.MicrosoftSolitaireCollection",
+        "Microsoft.ZuneMusic", "Microsoft.ZuneVideo", "Microsoft.BingNews",
+        "Microsoft.MicrosoftStickyNotes", "Microsoft.People",
+        "Microsoft.Clipchamp", "MicrosoftTeams", "Microsoft.YourPhone",
+        "Microsoft.WindowsFeedbackHub", "Microsoft.BingWeather",
+        "Microsoft.Xbox.TCUI", "Microsoft.XboxGameOverlay",
+        "Microsoft.XboxGamingOverlay", "Microsoft.GamingApp"
+    )
+}
+
 function Remove-BloatApp {
     [CmdletBinding(SupportsShouldProcess)]
     param([int]$Mode)
     if ($Mode -eq 1) {
-        $apps = @(
-            "Microsoft.XboxApp", "Microsoft.GetHelp", "Microsoft.Getstarted",
-            "Microsoft.Microsoft3DViewer", "Microsoft.MicrosoftSolitaireCollection",
-            "Microsoft.ZuneMusic", "Microsoft.ZuneVideo", "Microsoft.BingNews",
-            "Microsoft.MicrosoftStickyNotes", "Microsoft.People",
-            "Microsoft.Clipchamp", "MicrosoftTeams", "Microsoft.YourPhone",
-            "Microsoft.WindowsFeedbackHub", "Microsoft.BingWeather",
-            "Microsoft.Xbox.TCUI", "Microsoft.XboxGameOverlay",
-            "Microsoft.XboxGamingOverlay", "Microsoft.GamingApp"
-        )
+        $apps = Get-CommonBloatwareList
     } elseif ($Mode -eq 2) {
         $apps = (Get-AppxPackage -AllUsers | Where-Object {
             $_.Name -notmatch "Microsoft.WindowsStore|Microsoft.DesktopAppInstaller|Microsoft.WindowsCalculator"
@@ -216,4 +220,159 @@ function Restore-Default {
     Remove-Item "HKLM:\SOFTWARE\Policies\Microsoft\Windows\OneDrive"       -Recurse -ErrorAction SilentlyContinue
     Remove-Item "HKLM:\SOFTWARE\Policies\Microsoft\Windows\System"         -Recurse -ErrorAction SilentlyContinue
     Log "Restored defaults."
+}
+
+# =============================================================================
+# Privacy Scan: Status Checks
+# Each Test-*Hardened function is read-only and mirrors the registry paths /
+# services used by its corresponding Disable-*/Enable-* setter above.
+# =============================================================================
+
+function Test-TelemetryHardened {
+    $telemetryOff = (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection' -Name 'AllowTelemetry' -ErrorAction SilentlyContinue).AllowTelemetry -eq 0
+    $serviceOff   = (Get-Service -Name 'DiagTrack' -ErrorAction SilentlyContinue).StartType -eq 'Disabled'
+    return [bool]($telemetryOff -and $serviceOff)
+}
+
+function Test-AdvertisingHardened {
+    $val = (Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo' -Name 'Enabled' -ErrorAction SilentlyContinue).Enabled
+    return [bool]($val -eq 0)
+}
+
+function Test-LocationHardened {
+    $val = (Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\lfsvc\Service\Configuration' -Name 'Status' -ErrorAction SilentlyContinue).Status
+    return [bool]($val -eq 0)
+}
+
+function Test-ActivityHistoryHardened {
+    $props = Get-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\System' -ErrorAction SilentlyContinue
+    return [bool](($props.PublishUserActivities -eq 0) -and ($props.UploadUserActivities -eq 0))
+}
+
+function Test-RecallHardened {
+    $val = (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI' -Name 'DisableAIDataAnalysis' -ErrorAction SilentlyContinue).DisableAIDataAnalysis
+    return [bool]($val -eq 1)
+}
+
+function Test-CortanaAndBingSearchHardened {
+    $policy = Get-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search' -ErrorAction SilentlyContinue
+    $user   = Get-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Search' -ErrorAction SilentlyContinue
+    return [bool](($policy.AllowCortana -eq 0) -and ($policy.DisableWebSearch -eq 1) -and ($user.BingSearchEnabled -eq 0))
+}
+
+function Test-SuggestedContentHardened {
+    $cdm = Get-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -ErrorAction SilentlyContinue
+    return [bool](($cdm.SilentInstalledAppsEnabled -eq 0) -and ($cdm.'SubscribedContent-338388Enabled' -eq 0) -and ($cdm.SystemPaneSuggestionsEnabled -eq 0))
+}
+
+function Test-LockScreenAdHardened {
+    $cdm = Get-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -ErrorAction SilentlyContinue
+    return [bool](($cdm.RotatingLockScreenEnabled -eq 0) -and ($cdm.RotatingLockScreenOverlayEnabled -eq 0))
+}
+
+function Test-TailoredExperienceHardened {
+    $val = (Get-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Privacy' -Name 'TailoredExperiencesWithDiagnosticDataEnabled' -ErrorAction SilentlyContinue).TailoredExperiencesWithDiagnosticDataEnabled
+    return [bool]($val -eq 0)
+}
+
+function Test-OneDriveHardened {
+    $val = (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\OneDrive' -Name 'DisableFileSync' -ErrorAction SilentlyContinue).DisableFileSync
+    return [bool]($val -eq 1)
+}
+
+function Test-BackgroundAppHardened {
+    $val = (Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications' -Name 'GlobalUserDisabled' -ErrorAction SilentlyContinue).GlobalUserDisabled
+    return [bool]($val -eq 1)
+}
+
+function Test-EdgeSyncHardened {
+    $edge = Get-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Edge' -ErrorAction SilentlyContinue
+    return [bool](($edge.SyncDisabled -eq 1) -and ($edge.MetricsReportingEnabled -eq 0))
+}
+
+function Test-Smb1ProtocolHardened {
+    $val = (Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters' -Name 'SMB1' -ErrorAction SilentlyContinue).SMB1
+    return [bool]($val -eq 0)
+}
+
+function Test-NetworkProtectionHardened {
+    try {
+        return [bool]((Get-MpPreference -ErrorAction Stop).EnableNetworkProtection -eq 1)
+    } catch {
+        return $false
+    }
+}
+
+function Test-ControlledFolderAccessHardened {
+    try {
+        return [bool]((Get-MpPreference -ErrorAction Stop).EnableControlledFolderAccess -eq 1)
+    } catch {
+        return $false
+    }
+}
+
+function Test-UacMaxHardened {
+    $uac = Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' -ErrorAction SilentlyContinue
+    return [bool](($uac.ConsentPromptBehaviorAdmin -eq 2) -and ($uac.PromptOnSecureDesktop -eq 1))
+}
+
+function Test-AutoRunHardened {
+    $explorer = Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer' -ErrorAction SilentlyContinue
+    return [bool](($explorer.NoDriveTypeAutoRun -eq 255) -and ($explorer.NoAutorun -eq 1))
+}
+
+function Test-BloatwareHardened {
+    $installed = Get-AppxPackage -AllUsers -ErrorAction SilentlyContinue | Where-Object { $_.Name -in (Get-CommonBloatwareList) }
+    return [bool](-not $installed)
+}
+
+function Get-PrivacyChecklist {
+    @(
+        @{ Category = 'Tracking & Data Collection'; Name = 'Telemetry & Data Collection';      Test = 'Test-TelemetryHardened' }
+        @{ Category = 'Tracking & Data Collection'; Name = 'Advertising ID';                    Test = 'Test-AdvertisingHardened' }
+        @{ Category = 'Tracking & Data Collection'; Name = 'Location Services';                 Test = 'Test-LocationHardened' }
+        @{ Category = 'Tracking & Data Collection'; Name = 'Activity History';                  Test = 'Test-ActivityHistoryHardened' }
+        @{ Category = 'Tracking & Data Collection'; Name = 'Windows Recall';                    Test = 'Test-RecallHardened' }
+        @{ Category = 'Tracking & Data Collection'; Name = 'Cortana & Bing Search';              Test = 'Test-CortanaAndBingSearchHardened' }
+        @{ Category = 'Suggested Content & Ads';    Name = 'Suggested Apps & Promotions';        Test = 'Test-SuggestedContentHardened' }
+        @{ Category = 'Suggested Content & Ads';    Name = 'Lock Screen Spotlight & Ads';        Test = 'Test-LockScreenAdHardened' }
+        @{ Category = 'Suggested Content & Ads';    Name = 'Tailored Experiences';               Test = 'Test-TailoredExperienceHardened' }
+        @{ Category = 'Microsoft Services';         Name = 'OneDrive Integration';               Test = 'Test-OneDriveHardened' }
+        @{ Category = 'Microsoft Services';         Name = 'Background Apps';                    Test = 'Test-BackgroundAppHardened' }
+        @{ Category = 'Microsoft Services';         Name = 'Edge Sync & Telemetry';               Test = 'Test-EdgeSyncHardened' }
+        @{ Category = 'Security Hardening';         Name = 'SMBv1 Disabled';                     Test = 'Test-Smb1ProtocolHardened' }
+        @{ Category = 'Security Hardening';         Name = 'Network Protection';                  Test = 'Test-NetworkProtectionHardened' }
+        @{ Category = 'Security Hardening';         Name = 'Controlled Folder Access';            Test = 'Test-ControlledFolderAccessHardened' }
+        @{ Category = 'Security Hardening';         Name = 'UAC Maximum Level';                   Test = 'Test-UacMaxHardened' }
+        @{ Category = 'Security Hardening';         Name = 'AutoRun Disabled';                    Test = 'Test-AutoRunHardened' }
+        @{ Category = 'Bloatware Removal';          Name = 'Common Bloatware Removed';            Test = 'Test-BloatwareHardened' }
+    )
+}
+
+function Invoke-PrivacyScan {
+    $results = foreach ($c in Get-PrivacyChecklist) {
+        [PSCustomObject]@{
+            Category = $c.Category
+            Name     = $c.Name
+            Passed   = [bool](& $c.Test)
+        }
+    }
+
+    $total   = $results.Count
+    $passed  = ($results | Where-Object Passed).Count
+    $percent = if ($total -gt 0) { [math]::Round(100 * $passed / $total) } else { 0 }
+    $rating  = if ($percent -ge 90) { 'Excellent' }
+               elseif ($percent -ge 70) { 'Good' }
+               elseif ($percent -ge 50) { 'Fair' }
+               else { 'Needs Attention' }
+
+    Log "Privacy Scan: $passed/$total checks passed ($percent% - $rating)"
+
+    [PSCustomObject]@{
+        Results      = $results
+        TotalChecks  = $total
+        PassedChecks = $passed
+        ScorePercent = $percent
+        Rating       = $rating
+    }
 }

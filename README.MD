@@ -14,6 +14,7 @@
 | Feature | Description |
 | --- | --- |
 | 🖥️ **WinForms GUI** | Tabbed interface — no command-line knowledge required |
+| 📊 **Privacy Scan & Score** | Live scan of your current system against all 18 settings below, with a percentage score and rating — rescans automatically after you apply changes |
 | 🔒 **Privacy hardening** | Disable telemetry, ads, tracking, Recall, Cortana, and Bing |
 | 📢 **Ad & content controls** | Block suggested apps, lock screen ads, and tailored experiences |
 | 🛡️ **Security hardening** | Disable SMBv1, enable Network Protection and Controlled Folder Access, enforce UAC, block AutoRun |
@@ -25,6 +26,10 @@
 ---
 
 ## 🧩 What It Does
+
+### Scan Tab
+
+Opens automatically when the app launches and shows your current Privacy Score — the percentage of the 18 settings below that are already hardened, with a color-coded rating (Excellent / Good / Fair / Needs Attention). Click **Run Scan** any time, or apply changes on the other tabs and the score refreshes automatically so you can see it improve.
 
 ### Privacy Tab
 
@@ -105,11 +110,12 @@ The GUI will open automatically. You must run as Administrator — the script wi
 
 ## 🧭 Usage
 
-1. Click **Create Restore Point** before making any changes (strongly recommended)
-2. Select the **Privacy**, **Services**, **Security**, or **Bloatware** tab
-3. Check or uncheck the settings you want to apply
-4. Click **Apply Selected** — a progress bar tracks each operation
-5. Restart when prompted for all changes to take effect
+1. On launch, the **Scan** tab shows your current Privacy Score
+2. Click **Create Restore Point** before making any changes (strongly recommended)
+3. Select the **Privacy**, **Services**, **Security**, or **Bloatware** tab
+4. Check or uncheck the settings you want to apply
+5. Click **Apply Selected** — a progress bar tracks each operation, then the Scan tab reopens with your updated score
+6. Restart when prompted for all changes to take effect
 
 All applied changes are appended to:
 

@@ -2,7 +2,7 @@
 
 BeforeAll {
     $script:LogFile = [System.IO.Path]::GetTempFileName()
-    . (Join-Path $PSScriptRoot '..' 'Win11PrivacyFunctions.ps1')
+    . (Join-Path $PSScriptRoot '..\Win11PrivacyFunctions.ps1')
 }
 
 AfterAll {
@@ -10,8 +10,11 @@ AfterAll {
 }
 
 # ---------------------------------------------------------------------------
-# Shared mocks applied before every test to suppress real system calls
+# Shared mocks applied before every test to suppress real system calls.
+# Wrapped in one Describe because BeforeEach/AfterEach must live inside a
+# block container in Pester 5+ -- they cannot appear at file root.
 # ---------------------------------------------------------------------------
+Describe 'Win11PrivacyToolkit' {
 BeforeEach {
     Mock Log                          {}
     Mock Out-File                     {}
@@ -29,6 +32,9 @@ BeforeEach {
     Mock Get-AppxPackage              { @() }
     Mock Remove-AppxPackage           {}
     Mock reg                          {}
+    Mock Get-ItemProperty             {}
+    Mock Get-Service                  {}
+    Mock Get-MpPreference             {}
 }
 
 # ---------------------------------------------------------------------------
@@ -366,3 +372,300 @@ Describe 'Restore-Default' {
         }
     }
 }
+
+# ===========================================================================
+# Privacy Scan: Status Checks
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+Describe 'Test-TelemetryHardened' {
+    It 'returns $true when telemetry and DiagTrack are disabled' {
+        Mock Get-ItemProperty { [PSCustomObject]@{ AllowTelemetry = 0 } } -ParameterFilter {
+            $Path -eq 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection'
+        }
+        Mock Get-Service { [PSCustomObject]@{ StartType = 'Disabled' } } -ParameterFilter {
+            $Name -eq 'DiagTrack'
+        }
+        Test-TelemetryHardened | Should -Be $true
+    }
+    It 'returns $false when telemetry is still enabled' {
+        Test-TelemetryHardened | Should -Be $false
+    }
+}
+
+# ---------------------------------------------------------------------------
+Describe 'Test-AdvertisingHardened' {
+    It 'returns $true when Enabled=0' {
+        Mock Get-ItemProperty { [PSCustomObject]@{ Enabled = 0 } } -ParameterFilter {
+            $Path -eq 'HKCU:\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo'
+        }
+        Test-AdvertisingHardened | Should -Be $true
+    }
+    It 'returns $false when the key is missing' {
+        Test-AdvertisingHardened | Should -Be $false
+    }
+}
+
+# ---------------------------------------------------------------------------
+Describe 'Test-LocationHardened' {
+    It 'returns $true when Status=0' {
+        Mock Get-ItemProperty { [PSCustomObject]@{ Status = 0 } } -ParameterFilter {
+            $Path -eq 'HKLM:\SYSTEM\CurrentControlSet\Services\lfsvc\Service\Configuration'
+        }
+        Test-LocationHardened | Should -Be $true
+    }
+    It 'returns $false by default' {
+        Test-LocationHardened | Should -Be $false
+    }
+}
+
+# ---------------------------------------------------------------------------
+Describe 'Test-ActivityHistoryHardened' {
+    It 'returns $true when both values are 0' {
+        Mock Get-ItemProperty {
+            [PSCustomObject]@{ PublishUserActivities = 0; UploadUserActivities = 0 }
+        } -ParameterFilter { $Path -eq 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\System' }
+        Test-ActivityHistoryHardened | Should -Be $true
+    }
+    It 'returns $false when only one value is hardened' {
+        Mock Get-ItemProperty {
+            [PSCustomObject]@{ PublishUserActivities = 0; UploadUserActivities = 1 }
+        } -ParameterFilter { $Path -eq 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\System' }
+        Test-ActivityHistoryHardened | Should -Be $false
+    }
+}
+
+# ---------------------------------------------------------------------------
+Describe 'Test-RecallHardened' {
+    It 'returns $true when DisableAIDataAnalysis=1' {
+        Mock Get-ItemProperty { [PSCustomObject]@{ DisableAIDataAnalysis = 1 } } -ParameterFilter {
+            $Path -eq 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI'
+        }
+        Test-RecallHardened | Should -Be $true
+    }
+    It 'returns $false when the policy key is missing' {
+        Test-RecallHardened | Should -Be $false
+    }
+}
+
+# ---------------------------------------------------------------------------
+Describe 'Test-CortanaAndBingSearchHardened' {
+    It 'returns $true when all three values are hardened' {
+        Mock Get-ItemProperty {
+            [PSCustomObject]@{ AllowCortana = 0; DisableWebSearch = 1 }
+        } -ParameterFilter { $Path -eq 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search' }
+        Mock Get-ItemProperty {
+            [PSCustomObject]@{ BingSearchEnabled = 0 }
+        } -ParameterFilter { $Path -eq 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Search' }
+        Test-CortanaAndBingSearchHardened | Should -Be $true
+    }
+    It 'returns $false when Bing search is still enabled' {
+        Mock Get-ItemProperty {
+            [PSCustomObject]@{ AllowCortana = 0; DisableWebSearch = 1 }
+        } -ParameterFilter { $Path -eq 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search' }
+        Mock Get-ItemProperty {
+            [PSCustomObject]@{ BingSearchEnabled = 1 }
+        } -ParameterFilter { $Path -eq 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Search' }
+        Test-CortanaAndBingSearchHardened | Should -Be $false
+    }
+}
+
+# ---------------------------------------------------------------------------
+Describe 'Test-SuggestedContentHardened' {
+    It 'returns $true when all three CDM values are 0' {
+        Mock Get-ItemProperty {
+            [PSCustomObject]@{
+                SilentInstalledAppsEnabled        = 0
+                'SubscribedContent-338388Enabled' = 0
+                SystemPaneSuggestionsEnabled      = 0
+            }
+        } -ParameterFilter { $Path -eq 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' }
+        Test-SuggestedContentHardened | Should -Be $true
+    }
+    It 'returns $false when the CDM key is missing' {
+        Test-SuggestedContentHardened | Should -Be $false
+    }
+}
+
+# ---------------------------------------------------------------------------
+Describe 'Test-LockScreenAdHardened' {
+    It 'returns $true when both lock screen values are 0' {
+        Mock Get-ItemProperty {
+            [PSCustomObject]@{ RotatingLockScreenEnabled = 0; RotatingLockScreenOverlayEnabled = 0 }
+        } -ParameterFilter { $Path -eq 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' }
+        Test-LockScreenAdHardened | Should -Be $true
+    }
+    It 'returns $false by default' {
+        Test-LockScreenAdHardened | Should -Be $false
+    }
+}
+
+# ---------------------------------------------------------------------------
+Describe 'Test-TailoredExperienceHardened' {
+    It 'returns $true when TailoredExperiencesWithDiagnosticDataEnabled=0' {
+        Mock Get-ItemProperty {
+            [PSCustomObject]@{ TailoredExperiencesWithDiagnosticDataEnabled = 0 }
+        } -ParameterFilter { $Path -eq 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Privacy' }
+        Test-TailoredExperienceHardened | Should -Be $true
+    }
+    It 'returns $false by default' {
+        Test-TailoredExperienceHardened | Should -Be $false
+    }
+}
+
+# ---------------------------------------------------------------------------
+Describe 'Test-OneDriveHardened' {
+    It 'returns $true when DisableFileSync=1' {
+        Mock Get-ItemProperty { [PSCustomObject]@{ DisableFileSync = 1 } } -ParameterFilter {
+            $Path -eq 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\OneDrive'
+        }
+        Test-OneDriveHardened | Should -Be $true
+    }
+    It 'returns $false by default' {
+        Test-OneDriveHardened | Should -Be $false
+    }
+}
+
+# ---------------------------------------------------------------------------
+Describe 'Test-BackgroundAppHardened' {
+    It 'returns $true when GlobalUserDisabled=1' {
+        Mock Get-ItemProperty { [PSCustomObject]@{ GlobalUserDisabled = 1 } } -ParameterFilter {
+            $Path -eq 'HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications'
+        }
+        Test-BackgroundAppHardened | Should -Be $true
+    }
+    It 'returns $false by default' {
+        Test-BackgroundAppHardened | Should -Be $false
+    }
+}
+
+# ---------------------------------------------------------------------------
+Describe 'Test-EdgeSyncHardened' {
+    It 'returns $true when sync and metrics are disabled' {
+        Mock Get-ItemProperty {
+            [PSCustomObject]@{ SyncDisabled = 1; MetricsReportingEnabled = 0 }
+        } -ParameterFilter { $Path -eq 'HKLM:\SOFTWARE\Policies\Microsoft\Edge' }
+        Test-EdgeSyncHardened | Should -Be $true
+    }
+    It 'returns $false by default' {
+        Test-EdgeSyncHardened | Should -Be $false
+    }
+}
+
+# ---------------------------------------------------------------------------
+Describe 'Test-Smb1ProtocolHardened' {
+    It 'returns $true when SMB1=0' {
+        Mock Get-ItemProperty { [PSCustomObject]@{ SMB1 = 0 } } -ParameterFilter {
+            $Path -eq 'HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters'
+        }
+        Test-Smb1ProtocolHardened | Should -Be $true
+    }
+    It 'returns $false by default' {
+        Test-Smb1ProtocolHardened | Should -Be $false
+    }
+}
+
+# ---------------------------------------------------------------------------
+Describe 'Test-NetworkProtectionHardened' {
+    It 'returns $true when EnableNetworkProtection=1' {
+        Mock Get-MpPreference { [PSCustomObject]@{ EnableNetworkProtection = 1 } }
+        Test-NetworkProtectionHardened | Should -Be $true
+    }
+    It 'returns $false when Get-MpPreference throws' {
+        Mock Get-MpPreference { throw 'Defender unavailable' }
+        Test-NetworkProtectionHardened | Should -Be $false
+    }
+}
+
+# ---------------------------------------------------------------------------
+Describe 'Test-ControlledFolderAccessHardened' {
+    It 'returns $true when EnableControlledFolderAccess=1' {
+        Mock Get-MpPreference { [PSCustomObject]@{ EnableControlledFolderAccess = 1 } }
+        Test-ControlledFolderAccessHardened | Should -Be $true
+    }
+    It 'returns $false when Get-MpPreference throws' {
+        Mock Get-MpPreference { throw 'Defender unavailable' }
+        Test-ControlledFolderAccessHardened | Should -Be $false
+    }
+}
+
+# ---------------------------------------------------------------------------
+Describe 'Test-UacMaxHardened' {
+    It 'returns $true when both UAC values are set' {
+        Mock Get-ItemProperty {
+            [PSCustomObject]@{ ConsentPromptBehaviorAdmin = 2; PromptOnSecureDesktop = 1 }
+        } -ParameterFilter { $Path -eq 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' }
+        Test-UacMaxHardened | Should -Be $true
+    }
+    It 'returns $false by default' {
+        Test-UacMaxHardened | Should -Be $false
+    }
+}
+
+# ---------------------------------------------------------------------------
+Describe 'Test-AutoRunHardened' {
+    It 'returns $true when both AutoRun values are set' {
+        Mock Get-ItemProperty {
+            [PSCustomObject]@{ NoDriveTypeAutoRun = 255; NoAutorun = 1 }
+        } -ParameterFilter { $Path -eq 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer' }
+        Test-AutoRunHardened | Should -Be $true
+    }
+    It 'returns $false by default' {
+        Test-AutoRunHardened | Should -Be $false
+    }
+}
+
+# ---------------------------------------------------------------------------
+Describe 'Test-BloatwareHardened' {
+    It 'returns $true when none of the common bloatware list is installed' {
+        Test-BloatwareHardened | Should -Be $true
+    }
+    It 'returns $false when a common bloatware app is still installed' {
+        Mock Get-AppxPackage { @([PSCustomObject]@{ Name = 'Microsoft.BingNews' }) } -ParameterFilter {
+            $AllUsers -eq $true
+        }
+        Test-BloatwareHardened | Should -Be $false
+    }
+}
+
+# ---------------------------------------------------------------------------
+Describe 'Get-PrivacyChecklist' {
+    It 'returns 18 checks' {
+        (Get-PrivacyChecklist).Count | Should -Be 18
+    }
+    It 'every entry names a Test function that actually exists' {
+        foreach ($c in Get-PrivacyChecklist) {
+            Get-Command $c.Test -ErrorAction SilentlyContinue | Should -Not -BeNullOrEmpty
+        }
+    }
+}
+
+# ---------------------------------------------------------------------------
+Describe 'Invoke-PrivacyScan' {
+    BeforeEach {
+        function Test-StubPass { $true }
+        function Test-StubFail { $false }
+        Mock Get-PrivacyChecklist {
+            @(
+                @{ Category = 'A'; Name = 'One';   Test = 'Test-StubPass' }
+                @{ Category = 'A'; Name = 'Two';   Test = 'Test-StubPass' }
+                @{ Category = 'B'; Name = 'Three'; Test = 'Test-StubFail' }
+                @{ Category = 'B'; Name = 'Four';  Test = 'Test-StubFail' }
+            )
+        }
+    }
+
+    It 'computes the pass count and percentage correctly' {
+        $scan = Invoke-PrivacyScan
+        $scan.TotalChecks  | Should -Be 4
+        $scan.PassedChecks | Should -Be 2
+        $scan.ScorePercent | Should -Be 50
+        $scan.Rating       | Should -Be 'Fair'
+    }
+    It 'logs a summary line' {
+        Invoke-PrivacyScan
+        Should -Invoke Log -ParameterFilter { $msg -like 'Privacy Scan: 2/4*' }
+    }
+}
+
+} # Describe 'Win11PrivacyToolkit'
