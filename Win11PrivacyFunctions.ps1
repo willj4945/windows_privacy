@@ -198,7 +198,7 @@ function Get-CommonBloatwareList {
     )
 }
 
-function Get-ProtectedAppxPackages {
+function Get-ProtectedAppxPackage {
     @(
         # Shell / sign-in critical
         'Microsoft.Windows.StartMenuExperienceHost', 'Microsoft.Windows.ShellExperienceHost',
@@ -224,7 +224,7 @@ function Get-ProtectedAppxPackages {
 
 function Test-ProtectedAppxPackage {
     param([string]$Name)
-    foreach ($pattern in Get-ProtectedAppxPackages) {
+    foreach ($pattern in Get-ProtectedAppxPackage) {
         if ($Name -like $pattern) { return $true }
     }
     return $false

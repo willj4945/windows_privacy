@@ -172,6 +172,10 @@ Pull requests and feature ideas are welcome.
 4. Push to the branch (`git push origin feature/my-feature`)
 5. Open a pull request — PSScriptAnalyzer will run automatically on the PR
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for coding conventions, project layout, and testing details.
+
+Found a security issue? Please follow [SECURITY.md](SECURITY.md) instead of opening a public issue.
+
 ---
 
 ## 📄 License
