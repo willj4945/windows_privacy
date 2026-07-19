@@ -364,6 +364,19 @@ Describe 'Remove-BloatApp' {
             Should -Invoke Get-AppxPackage -Times 0
         }
     }
+
+    Context 'AppNames (explicit list, used by the confirmation dialog opt-out)' {
+        It 'removes only the apps passed in, ignoring Mode-based scanning' {
+            Remove-BloatApp -AppNames @('Microsoft.BingNews', 'MicrosoftTeams')
+            Should -Invoke Get-AppxPackage -Times 2
+            Should -Invoke Get-AppxPackage -ParameterFilter { $Name -eq 'Microsoft.BingNews' }
+            Should -Invoke Get-AppxPackage -ParameterFilter { $Name -eq 'MicrosoftTeams' }
+        }
+        It 'removes nothing when given an empty list' {
+            Remove-BloatApp -AppNames @()
+            Should -Invoke Get-AppxPackage -Times 0
+        }
+    }
 }
 
 # ---------------------------------------------------------------------------
@@ -373,6 +386,12 @@ Describe 'Test-ProtectedAppxPackage' {
     }
     It 'returns $true for a versioned framework name matching a wildcard pattern' {
         Test-ProtectedAppxPackage -Name 'Microsoft.VCLibs.140.00.UWPDesktop' | Should -Be $true
+    }
+    It 'returns $true for VS Code (Store build)' {
+        Test-ProtectedAppxPackage -Name 'Microsoft.VisualStudioCode' | Should -Be $true
+    }
+    It 'returns $true for VS Code Insiders' {
+        Test-ProtectedAppxPackage -Name 'Microsoft.VisualStudioCode.Insiders' | Should -Be $true
     }
     It 'returns $false for an unrelated package name' {
         Test-ProtectedAppxPackage -Name 'Microsoft.BingNews' | Should -Be $false

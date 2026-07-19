@@ -218,7 +218,8 @@ function Get-ProtectedAppxPackage {
         # Kept by default / dev tools worth protecting even though Microsoft-published
         'Microsoft.WindowsStore', 'Microsoft.DesktopAppInstaller', 'Microsoft.WindowsCalculator',
         'Microsoft.WindowsNotepad', 'Microsoft.WindowsTerminal*', 'Microsoft.PowerShell*',
-        'Microsoft.Windows.DevHome*', 'MicrosoftCorporationII.WindowsSubsystemForLinux'
+        'Microsoft.Windows.DevHome*', 'MicrosoftCorporationII.WindowsSubsystemForLinux',
+        'Microsoft.VisualStudioCode*'
     )
 }
 
@@ -244,8 +245,12 @@ function Get-AppsToRemove {
 
 function Remove-BloatApp {
     [CmdletBinding(SupportsShouldProcess)]
-    param([int]$Mode)
-    foreach ($app in Get-AppsToRemove -Mode $Mode) {
+    param(
+        [int]$Mode,
+        [string[]]$AppNames
+    )
+    $apps = if ($PSBoundParameters.ContainsKey('AppNames')) { $AppNames } else { Get-AppsToRemove -Mode $Mode }
+    foreach ($app in $apps) {
         Get-AppxPackage -Name $app -AllUsers | Remove-AppxPackage -ErrorAction SilentlyContinue
         Log "Removed app: $app"
     }
