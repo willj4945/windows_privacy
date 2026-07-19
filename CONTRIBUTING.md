@@ -100,6 +100,7 @@ New backend functions should ship with a corresponding Pester test in `tests\Win
 5. Commit with a clear message describing the *why*, not just the *what*
 6. Push to your fork and open a pull request against `main`
 7. Fill in what the change does and how you tested it — PSScriptAnalyzer and Pester will also run automatically on the PR
+8. Give the PR a clear, descriptive title — release notes are auto-generated from merged PR titles, so the title is what ends up in the changelog
 
 A maintainer will review and may ask for changes before merging. Please be patient — this is maintained on a best-effort basis.
 

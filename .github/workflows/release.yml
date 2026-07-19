@@ -110,3 +110,4 @@ jobs:
             Win11PrivacyToolkit.exe
             SHA256SUMS.txt
           body_path: release-notes.md
+          generate_release_notes: true
