@@ -7,6 +7,8 @@
 
 > **Windows 11 Privacy Toolkit** is a GUI-based PowerShell utility that helps users harden their privacy and security on Windows 11 — with no coding required. Changes are applied selectively via checkboxes, logged to disk, and reversible via a built-in restore point.
 
+🌐 **[Project website & one-click download](https://willj4945.github.io/windows_privacy/)**
+
 ---
 
 ## ✨ Features
@@ -83,7 +85,25 @@ Opens automatically when the app launches and shows your current Privacy Score �
 - Administrator privileges
 - Windows PowerShell 5.1 or PowerShell 7+
 
-### Installation
+### Option A: Download the prebuilt executable
+
+Grab the latest `Win11PrivacyToolkit.exe` from the
+**[project website](https://willj4945.github.io/windows_privacy/)** or the
+[Releases page](https://github.com/willj4945/windows_privacy/releases/latest). It's built directly
+from this source code by an automated GitHub Actions workflow — not compiled on a personal
+machine — and every release ships with a `SHA256SUMS.txt` checksum file.
+
+> **Current releases are unsigned.** Windows SmartScreen may warn that the file is from an
+> unrecognized publisher. Verify the download before running it:
+>
+> ```powershell
+> Get-FileHash .\Win11PrivacyToolkit.exe -Algorithm SHA256
+> ```
+>
+> ...and compare the result to `SHA256SUMS.txt` on the release page. Code signing is planned —
+> see [Support the Project](#-support-the-project) below.
+
+### Option B: Run from source
 
 #### 1. Clone the repository
 
@@ -151,6 +171,13 @@ Install-Module Pester -MinimumVersion 5.0 -Scope CurrentUser -Force
 Invoke-Pester -Path .\tests -Output Detailed
 ```
 
+### Releases
+
+Pushing a `vX.Y.Z` tag triggers a separate GitHub Actions workflow that merges the two
+`.ps1` files into a single script, compiles it to `Win11PrivacyToolkit.exe` with
+[PS2EXE](https://github.com/MScholtes/PS2EXE), generates a SHA256 checksum, and publishes both
+to a new GitHub Release. See [.github/workflows/release.yml](.github/workflows/release.yml).
+
 ---
 
 ## ⚠️ Disclaimer
@@ -186,6 +213,12 @@ You are free to use, modify, and distribute this script with attribution.
 ---
 
 ## ⭐ Support the Project
+
+This is a solo, spare-time open-source project. The main goal for sponsorship is funding a
+code-signing certificate so releases are trusted by Windows out of the box instead of triggering
+a SmartScreen warning. Sponsorship isn't live yet, but is coming.
+
+In the meantime:
 
 - Give the repo a **⭐ Star** on GitHub
 - Share it with others who value privacy

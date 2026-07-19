@@ -1,0 +1,112 @@
+name: Release
+
+# Builds a standalone Win11PrivacyToolkit.exe from the two PowerShell source
+# files, checksums it, and publishes it to a GitHub Release whenever a
+# vX.Y.Z tag is pushed.
+#
+# Code signing is wired in but OFF by default (no certificate exists yet).
+# To turn it on with a traditional Authenticode/EV certificate, add these
+# repository secrets:
+#   WINDOWS_CERTIFICATE           (base64-encoded .pfx file)
+#   WINDOWS_CERTIFICATE_PASSWORD  (the .pfx password)
+# The "Code-sign executable" step below activates automatically once
+# WINDOWS_CERTIFICATE is set - no workflow changes needed.
+#
+# If Azure Trusted Signing is chosen instead, replace the "Code-sign
+# executable" step with the azure/trusted-signing-action action and swap
+# the PFX secrets for Azure service principal credentials.
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build, sign, and publish release
+    runs-on: windows-latest
+    env:
+      HAS_SIGNING_CERT: ${{ secrets.WINDOWS_CERTIFICATE != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version from tag
+        id: version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $version = $tag -replace '^v', ''
+          if ($version -notmatch '^\d+\.\d+\.\d+$') {
+            throw "Tag '$tag' must be in the form vX.Y.Z (e.g. v1.0.0)"
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Merge scripts into a single standalone file
+        shell: pwsh
+        run: |
+          $functions = Get-Content Win11PrivacyFunctions.ps1 -Raw
+          $main      = Get-Content Win11PrivacyToolkit.ps1 -Raw
+          $dotSource = '. "$PSScriptRoot\Win11PrivacyFunctions.ps1"'
+          $mainLines = ($main -split "`r?`n") | Where-Object { $_.Trim() -ne $dotSource }
+          Set-Content -Path merged.ps1 -Value ($functions + "`n`n" + ($mainLines -join "`n")) -Encoding UTF8
+
+      - name: Install PS2EXE
+        shell: pwsh
+        run: Install-Module ps2exe -Scope CurrentUser -Force
+
+      - name: Compile to Win11PrivacyToolkit.exe
+        shell: pwsh
+        run: |
+          Invoke-ps2exe -inputFile merged.ps1 -outputFile Win11PrivacyToolkit.exe `
+            -title "Windows 11 Privacy Toolkit" `
+            -product "Windows 11 Privacy Toolkit" `
+            -version "${{ steps.version.outputs.version }}.0" `
+            -company "willj4945" `
+            -copyright "MIT License - github.com/willj4945/windows_privacy" `
+            -requireAdmin -noConsole -STA
+
+      - name: Code-sign executable (skipped until WINDOWS_CERTIFICATE secret is configured)
+        if: env.HAS_SIGNING_CERT == 'true'
+        shell: pwsh
+        run: |
+          $certPath = Join-Path $env:RUNNER_TEMP "cert.pfx"
+          [IO.File]::WriteAllBytes($certPath, [Convert]::FromBase64String("${{ secrets.WINDOWS_CERTIFICATE }}"))
+          $signtool = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin" -Recurse -Filter signtool.exe |
+            Where-Object { $_.FullName -match "x64" } | Select-Object -First 1 -ExpandProperty FullName
+          & $signtool sign /f $certPath /p "${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}" /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 Win11PrivacyToolkit.exe
+          Remove-Item $certPath -Force
+          & $signtool verify /pa Win11PrivacyToolkit.exe
+
+      - name: Generate SHA256 checksum
+        shell: pwsh
+        run: |
+          $hash = Get-FileHash -Path Win11PrivacyToolkit.exe -Algorithm SHA256
+          "$($hash.Hash.ToLower())  Win11PrivacyToolkit.exe" | Set-Content -Path SHA256SUMS.txt -Encoding ASCII
+
+      - name: Build release notes
+        shell: pwsh
+        run: |
+          if ($env:HAS_SIGNING_CERT -eq 'true') {
+            $status = "This build is code-signed."
+          } else {
+            $status = "**Unsigned build.** Verify the SHA256 checksum below before running it - Windows SmartScreen may warn that this is from an unrecognized publisher."
+          }
+          $verifyBlock = @'
+          ### Verify the download
+
+              Get-FileHash .\Win11PrivacyToolkit.exe -Algorithm SHA256
+
+          Compare the result against `SHA256SUMS.txt` attached to this release.
+          '@
+          Set-Content -Path release-notes.md -Value "$status`n`n$verifyBlock" -Encoding UTF8
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            Win11PrivacyToolkit.exe
+            SHA256SUMS.txt
+          body_path: release-notes.md

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Windows 11 Privacy Toolkit</title>
+<meta name="description" content="A free, open-source GUI utility to harden privacy and security on Windows 11 - no coding required.">
+<style>
+  :root {
+    --accent: #0078d4;
+    --accent-dark: #005a9e;
+    --bg: #ffffff;
+    --bg-alt: #f5f7fa;
+    --text: #1b1f24;
+    --text-muted: #57606a;
+    --border: #d8dee4;
+    --card-bg: #ffffff;
+    --warn-bg: #fff8e6;
+    --warn-border: #f0c674;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1117;
+      --bg-alt: #161b22;
+      --text: #e6edf3;
+      --text-muted: #9198a1;
+      --border: #30363d;
+      --card-bg: #161b22;
+      --warn-bg: #2b2410;
+      --warn-border: #7a6420;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+  }
+  a { color: var(--accent); }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  header.hero {
+    background: linear-gradient(180deg, var(--bg-alt), var(--bg));
+    border-bottom: 1px solid var(--border);
+    padding: 72px 0 56px;
+    text-align: center;
+  }
+  .shield { font-size: 3.2rem; line-height: 1; margin-bottom: 8px; }
+  h1 {
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    font-weight: 700;
+    color: var(--accent);
+    margin: 0 0 12px;
+  }
+  .tagline {
+    font-size: 1.15rem;
+    color: var(--text-muted);
+    max-width: 560px;
+    margin: 0 auto 32px;
+  }
+
+  .cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 12px;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 26px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-dark); }
+  .btn-secondary {
+    background: transparent;
+    color: var(--text);
+    border-color: var(--border);
+  }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .cta-note { font-size: 0.85rem; color: var(--text-muted); }
+
+  section { padding: 56px 0; border-bottom: 1px solid var(--border); }
+  section:last-of-type { border-bottom: none; }
+  h2 {
+    font-size: 1.5rem;
+    margin: 0 0 8px;
+  }
+  .section-lede { color: var(--text-muted); margin: 0 0 32px; max-width: 620px; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 18px;
+  }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .card h3 { margin: 0 0 6px; font-size: 1.02rem; }
+  .card p { margin: 0; color: var(--text-muted); font-size: 0.92rem; }
+
+  .trust-box {
+    background: var(--warn-bg);
+    border: 1px solid var(--warn-border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 18px;
+  }
+  .trust-box p { margin: 0 0 10px; }
+  .trust-box p:last-child { margin-bottom: 0; }
+  code {
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 0.9em;
+  }
+  pre {
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-size: 0.88rem;
+  }
+  pre code { border: none; background: none; padding: 0; }
+
+  ul.checklist { list-style: none; padding: 0; margin: 0; }
+  ul.checklist li {
+    padding: 6px 0 6px 26px;
+    position: relative;
+    color: var(--text-muted);
+  }
+  ul.checklist li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  footer {
+    padding: 40px 0 60px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+  footer a { color: var(--text-muted); text-decoration: underline; }
+  footer .heart { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="shield">🛡️</div>
+    <h1>Windows 11 Privacy Toolkit</h1>
+    <p class="tagline">
+      A free, open-source GUI utility that helps you harden privacy and security
+      on Windows 11 — no coding required, fully reversible.
+    </p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="https://github.com/willj4945/windows_privacy/releases/latest/download/Win11PrivacyToolkit.exe">
+        ⬇ Download for Windows
+      </a>
+      <a class="btn btn-secondary" href="https://github.com/willj4945/windows_privacy">
+        View on GitHub
+      </a>
+    </div>
+    <p class="cta-note">Windows 11 (build 22000+) · Administrator privileges required · MIT licensed</p>
+  </div>
+</header>
+
+<section id="features">
+  <div class="wrap">
+    <h2>What it does</h2>
+    <p class="section-lede">
+      Eighteen individual settings across four categories, applied selectively via checkboxes —
+      nothing runs unless you tell it to.
+    </p>
+    <div class="grid">
+      <div class="card">
+        <h3>🔒 Privacy hardening</h3>
+        <p>Telemetry, advertising ID, location, activity history, Recall, Cortana &amp; Bing search, suggested content, lock screen ads, tailored experiences.</p>
+      </div>
+      <div class="card">
+        <h3>🧩 Services</h3>
+        <p>OneDrive sync, background apps, Edge sync &amp; telemetry.</p>
+      </div>
+      <div class="card">
+        <h3>🛡️ Security hardening</h3>
+        <p>Disable SMBv1, enable Network Protection and Controlled Folder Access, enforce UAC, block AutoRun.</p>
+      </div>
+      <div class="card">
+        <h3>🗑️ Debloating</h3>
+        <p>Remove common bloatware or all non-essential Microsoft Store apps, with a full preview before anything is removed.</p>
+      </div>
+      <div class="card">
+        <h3>📊 Privacy score</h3>
+        <p>Live scan of your current system against every setting above, with a percentage score that updates as you apply changes.</p>
+      </div>
+      <div class="card">
+        <h3>♻️ Safe &amp; reversible</h3>
+        <p>Creates a system restore point before applying changes, plus a one-click Restore Defaults.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="trust">
+  <div class="wrap">
+    <h2>Security &amp; trust</h2>
+    <p class="section-lede">
+      This tool runs as Administrator and changes real system settings — you shouldn't have to
+      just take our word for what's inside it.
+    </p>
+
+    <div class="trust-box">
+      <p><strong>⚠️ Current releases are unsigned.</strong> Windows SmartScreen may warn that the
+      download is from an unrecognized publisher. Code signing is on the roadmap — see the
+      sponsorship note below — but every release ships with a checksum so you can verify the
+      file wasn't tampered with in transit.</p>
+      <p>Every <code>.exe</code> is built directly from this public source code by an automated
+      GitHub Actions workflow (not compiled on a personal machine), and every release includes a
+      <code>SHA256SUMS.txt</code> file. To verify your download, open PowerShell and run:</p>
+      <pre><code>Get-FileHash .\Win11PrivacyToolkit.exe -Algorithm SHA256</code></pre>
+      <p>...then compare the output to the checksum published on the
+      <a href="https://github.com/willj4945/windows_privacy/releases">Releases page</a>.</p>
+    </div>
+
+    <ul class="checklist">
+      <li>100% open source — read every line before you run it</li>
+      <li>Built and published by a public, auditable GitHub Actions workflow</li>
+      <li>No network calls, no telemetry of its own, no bundled third-party software</li>
+      <li>Every applied change is logged to a local text file</li>
+      <li>Vulnerability reports handled per our <a href="https://github.com/willj4945/windows_privacy/blob/main/SECURITY.md">security policy</a></li>
+    </ul>
+  </div>
+</section>
+
+<section id="support">
+  <div class="wrap">
+    <h2>Support the project</h2>
+    <p class="section-lede">
+      This is a solo, spare-time open-source project. The biggest thing standing between this
+      tool and a fully code-signed release (no more SmartScreen warnings) is the ongoing cost of
+      a code-signing certificate.
+    </p>
+    <div class="card">
+      <p style="margin:0 0 10px;">
+        Sponsorship isn't live yet, but it's coming — the first goal is funding code signing so
+        every release is trusted by Windows out of the box.
+      </p>
+      <p style="margin:0; color: var(--text-muted); font-size:0.92rem;">
+        In the meantime: ⭐ star the
+        <a href="https://github.com/willj4945/windows_privacy">GitHub repo</a>,
+        share it with others who care about privacy, or
+        <a href="https://github.com/willj4945/windows_privacy/issues">open an issue</a>
+        with ideas for new settings.
+      </p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>Windows 11 Privacy Toolkit is licensed under the
+      <a href="https://github.com/willj4945/windows_privacy/blob/main/LICENSE">MIT License</a>.
+    </p>
+    <p>Built by <a href="https://github.com/willj4945">Will Johnson</a> ·
+      <a href="https://github.com/willj4945/windows_privacy">Source on GitHub</a>
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>
