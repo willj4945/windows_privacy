@@ -27,6 +27,8 @@ $LogFile = "$PSScriptRoot\Win11PrivacyToolkit_Log.txt"
 . "$PSScriptRoot\Win11PrivacyFunctions.ps1"
 
 # --- Scrollable confirmation dialog (used for long app-removal lists) ---
+# Returns a PSCustomObject: @{ Result = <DialogResult>; SelectedApps = <string[]> }
+# SelectedApps reflects only the items still checked when the user clicks "Remove Checked".
 function Show-AppRemovalConfirmDialog {
     param(
         [Parameter(Mandatory)][string[]] $AppNames
@@ -34,7 +36,7 @@ function Show-AppRemovalConfirmDialog {
 
     $dlg                 = New-Object System.Windows.Forms.Form
     $dlg.Text             = "Confirm App Removal"
-    $dlg.Size             = New-Object System.Drawing.Size(480, 520)
+    $dlg.Size             = New-Object System.Drawing.Size(480, 560)
     $dlg.StartPosition    = "CenterScreen"
     $dlg.FormBorderStyle  = "FixedDialog"
     $dlg.MaximizeBox      = $false
@@ -42,37 +44,56 @@ function Show-AppRemovalConfirmDialog {
     $dlg.Font             = New-Object System.Drawing.Font("Segoe UI", 9)
 
     $lbl           = New-Object System.Windows.Forms.Label
-    $lbl.Text      = "The following $($AppNames.Count) app(s) will be removed:"
+    $lbl.Text      = "Uncheck anything you want to keep. $($AppNames.Count) app(s) checked for removal:"
     $lbl.Location  = New-Object System.Drawing.Point(12, 12)
-    $lbl.Size      = New-Object System.Drawing.Size(440, 20)
+    $lbl.Size      = New-Object System.Drawing.Size(440, 34)
     $dlg.Controls.Add($lbl)
 
-    $lst              = New-Object System.Windows.Forms.ListBox
-    $lst.Location     = New-Object System.Drawing.Point(12, 36)
-    $lst.Size         = New-Object System.Drawing.Size(440, 380)
-    $lst.SelectionMode = "None"
+    $lst                     = New-Object System.Windows.Forms.CheckedListBox
+    $lst.Location            = New-Object System.Drawing.Point(12, 50)
+    $lst.Size                = New-Object System.Drawing.Size(440, 366)
+    $lst.CheckOnClick        = $true
     $lst.HorizontalScrollbar = $true
-    foreach ($app in $AppNames) { [void]$lst.Items.Add($app) }
+    foreach ($app in $AppNames) { [void]$lst.Items.Add($app, $true) }
     $dlg.Controls.Add($lst)
 
+    $btnSelectAll          = New-Object System.Windows.Forms.Button
+    $btnSelectAll.Text     = "Select All"
+    $btnSelectAll.Location = New-Object System.Drawing.Point(12, 424)
+    $btnSelectAll.Size     = New-Object System.Drawing.Size(90, 26)
+    $btnSelectAll.Add_Click({ for ($i = 0; $i -lt $lst.Items.Count; $i++) { $lst.SetItemChecked($i, $true) } })
+    $dlg.Controls.Add($btnSelectAll)
+
+    $btnSelectNone          = New-Object System.Windows.Forms.Button
+    $btnSelectNone.Text     = "Select None"
+    $btnSelectNone.Location = New-Object System.Drawing.Point(108, 424)
+    $btnSelectNone.Size     = New-Object System.Drawing.Size(90, 26)
+    $btnSelectNone.Add_Click({ for ($i = 0; $i -lt $lst.Items.Count; $i++) { $lst.SetItemChecked($i, $false) } })
+    $dlg.Controls.Add($btnSelectNone)
+
     $btnYes           = New-Object System.Windows.Forms.Button
-    $btnYes.Text      = "Yes"
-    $btnYes.Location  = New-Object System.Drawing.Point(278, 428)
-    $btnYes.Size      = New-Object System.Drawing.Size(85, 30)
+    $btnYes.Text      = "Remove Checked"
+    $btnYes.Location  = New-Object System.Drawing.Point(250, 462)
+    $btnYes.Size      = New-Object System.Drawing.Size(105, 30)
     $btnYes.DialogResult = [System.Windows.Forms.DialogResult]::Yes
     $dlg.Controls.Add($btnYes)
 
     $btnNo            = New-Object System.Windows.Forms.Button
-    $btnNo.Text       = "No"
-    $btnNo.Location   = New-Object System.Drawing.Point(367, 428)
-    $btnNo.Size       = New-Object System.Drawing.Size(85, 30)
+    $btnNo.Text       = "Cancel"
+    $btnNo.Location   = New-Object System.Drawing.Point(361, 462)
+    $btnNo.Size       = New-Object System.Drawing.Size(91, 30)
     $btnNo.DialogResult = [System.Windows.Forms.DialogResult]::No
     $dlg.Controls.Add($btnNo)
 
     $dlg.AcceptButton = $btnYes
     $dlg.CancelButton = $btnNo
 
-    return $dlg.ShowDialog()
+    $result = $dlg.ShowDialog()
+
+    return [PSCustomObject]@{
+        Result       = $result
+        SelectedApps = @($lst.CheckedItems)
+    }
 }
 
 # =============================================================================
@@ -450,8 +471,25 @@ $btnApply.Add_Click({
     if ($chkCfa.Checked)              { $taskList.Add({ Enable-ControlledFolderAccess }) }
     if ($chkUac.Checked)              { $taskList.Add({ Set-UacMax }) }
     if ($chkAutoRun.Checked)          { $taskList.Add({ Disable-AutoRun }) }
-    if ($rdBloatCommon.Checked)       { $taskList.Add({ Remove-BloatApp -Mode 1 }) }
-    elseif ($rdBloatAll.Checked)      { $taskList.Add({ Remove-BloatApp -Mode 2 }) }
+    if ($rdBloatCommon.Checked) {
+        $taskList.Add({ Remove-BloatApp -Mode 1 })
+    } elseif ($rdBloatAll.Checked) {
+        $appsToRemove = Get-AppsToRemove -Mode 2
+        if ($appsToRemove.Count -gt 0) {
+            $confirm = Show-AppRemovalConfirmDialog -AppNames $appsToRemove
+            if ($confirm.Result -ne [System.Windows.Forms.DialogResult]::Yes) { return }
+            if ($confirm.SelectedApps.Count -eq 0) {
+                [System.Windows.Forms.MessageBox]::Show(
+                    "No apps were checked for removal.",
+                    "Nothing Selected",
+                    [System.Windows.Forms.MessageBoxButtons]::OK,
+                    [System.Windows.Forms.MessageBoxIcon]::Information)
+                return
+            }
+            $selectedApps = $confirm.SelectedApps
+            $taskList.Add({ Remove-BloatApp -AppNames $selectedApps })
+        }
+    }
 
     if ($taskList.Count -eq 0) {
         [System.Windows.Forms.MessageBox]::Show(
@@ -460,14 +498,6 @@ $btnApply.Add_Click({
             [System.Windows.Forms.MessageBoxButtons]::OK,
             [System.Windows.Forms.MessageBoxIcon]::Information)
         return
-    }
-
-    if ($rdBloatAll.Checked) {
-        $appsToRemove = Get-AppsToRemove -Mode 2
-        if ($appsToRemove.Count -gt 0) {
-            $confirm = Show-AppRemovalConfirmDialog -AppNames $appsToRemove
-            if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes) { return }
-        }
     }
 
     $btnApply.Enabled           = $false
