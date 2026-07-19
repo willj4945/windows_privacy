@@ -15,7 +15,7 @@ if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
     [System.Windows.Forms.MessageBox]::Show(
         "Please run this script as Administrator.",
         "Administrator Required",
-        [System.Windows.Forms.MessageBoxButtons]::OK,2
+        [System.Windows.Forms.MessageBoxButtons]::OK,
         [System.Windows.Forms.MessageBoxIcon]::Warning)
     exit
 }
