@@ -487,7 +487,7 @@ $btnApply.Add_Click({
                 return
             }
             $selectedApps = $confirm.SelectedApps
-            $taskList.Add({ Remove-BloatApp -AppNames $selectedApps }.GetNewClosure())
+            $taskList.Add({ Remove-BloatApp -AppNames $selectedApps })
         }
     }
 
