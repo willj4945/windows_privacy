@@ -723,8 +723,8 @@ Describe 'Test-BloatwareHardened' {
 
 # ---------------------------------------------------------------------------
 Describe 'Get-PrivacyChecklist' {
-    It 'returns 18 checks' {
-        (Get-PrivacyChecklist).Count | Should -Be 18
+    It 'returns 19 checks' {
+        (Get-PrivacyChecklist).Count | Should -Be 19
     }
     It 'every entry names a Test function that actually exists' {
         foreach ($c in Get-PrivacyChecklist) {
