@@ -3,11 +3,27 @@
 Windows 11 Privacy Toolkit
 Original Author: Will Johnson https://github.com/willj4945
 Description: GUI-based tool to help users disable telemetry, ads, tracking, bloatware, and harden security.
-Version: 3.0
 #>
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
+
+# --- Version ---
+# The release workflow bakes the tag version into the compiled exe's Win32 version
+# resource (ps2exe -version). Read it back from the running process so the GUI always
+# reflects the exe that's actually on disk, with no separate value to keep in sync.
+function Get-ToolkitVersion {
+    try {
+        $exePath = [System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
+        if ([System.IO.Path]::GetFileNameWithoutExtension($exePath) -eq 'Win11PrivacyToolkit') {
+            $fileVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($exePath).FileVersion
+            if ($fileVersion -match '^(\d+\.\d+\.\d+)\.0$') { return "v$($Matches[1])" }
+            if ($fileVersion) { return "v$fileVersion" }
+        }
+    } catch { }
+    return 'dev build'
+}
+$script:ToolkitVersion = Get-ToolkitVersion
 
 # --- Requires Administrator Privileges ---
 if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
@@ -101,7 +117,7 @@ function Show-AppRemovalConfirmDialog {
 # =============================================================================
 
 $form                  = New-Object System.Windows.Forms.Form
-$form.Text             = "Windows 11 Privacy Toolkit"
+$form.Text             = "Windows 11 Privacy Toolkit - $script:ToolkitVersion"
 $form.Size             = New-Object System.Drawing.Size(520, 660)
 $form.StartPosition    = "CenterScreen"
 $form.FormBorderStyle  = "FixedDialog"
@@ -114,8 +130,17 @@ $lblTitle.Text      = "Windows 11 Privacy Toolkit"
 $lblTitle.Font      = New-Object System.Drawing.Font("Segoe UI", 14, [System.Drawing.FontStyle]::Bold)
 $lblTitle.ForeColor = [System.Drawing.Color]::FromArgb(0, 120, 212)
 $lblTitle.Location  = New-Object System.Drawing.Point(15, 12)
-$lblTitle.Size      = New-Object System.Drawing.Size(480, 28)
+$lblTitle.Size      = New-Object System.Drawing.Size(400, 28)
 $form.Controls.Add($lblTitle)
+
+$lblVersion           = New-Object System.Windows.Forms.Label
+$lblVersion.Text      = $script:ToolkitVersion
+$lblVersion.Font      = New-Object System.Drawing.Font("Segoe UI", 9)
+$lblVersion.ForeColor = [System.Drawing.Color]::Gray
+$lblVersion.TextAlign = [System.Drawing.ContentAlignment]::BottomRight
+$lblVersion.Location  = New-Object System.Drawing.Point(410, 20)
+$lblVersion.Size      = New-Object System.Drawing.Size(90, 20)
+$form.Controls.Add($lblVersion)
 
 # --- Restore Point Warning ---
 $pnlWarn             = New-Object System.Windows.Forms.Panel
