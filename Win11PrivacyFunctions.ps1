@@ -254,6 +254,34 @@ function Remove-BloatApp {
         Get-AppxPackage -Name $app -AllUsers | Remove-AppxPackage -ErrorAction SilentlyContinue
         Log "Removed app: $app"
     }
+
+    # Removing the Xbox Game Bar packages leaves Windows still trying to hand off to the
+    # 'ms-gamingoverlay:' protocol (e.g. when a game checks in with Game Bar on launch),
+    # which now has no app to open it. Disable the hooks that trigger that handoff.
+    $gameBarPackages = @('Microsoft.Xbox.TCUI', 'Microsoft.XboxGameOverlay', 'Microsoft.XboxGamingOverlay')
+    if ($apps | Where-Object { $_ -in $gameBarPackages }) {
+        Disable-GameBarOverlay
+    }
+}
+
+function Disable-GameBarOverlay {
+    $gameDvrKey = 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR'
+    if (-not (Test-Path $gameDvrKey)) { New-Item -Path $gameDvrKey -Force | Out-Null }
+    Set-ItemProperty -Path $gameDvrKey -Name 'AppCaptureEnabled' -Value 0 -Type DWord
+
+    $gameConfigKey = 'HKCU:\System\GameConfigStore'
+    if (-not (Test-Path $gameConfigKey)) { New-Item -Path $gameConfigKey -Force | Out-Null }
+    Set-ItemProperty -Path $gameConfigKey -Name 'GameDVR_Enabled' -Value 0 -Type DWord
+
+    $gameBarKey = 'HKCU:\SOFTWARE\Microsoft\GameBar'
+    if (-not (Test-Path $gameBarKey)) { New-Item -Path $gameBarKey -Force | Out-Null }
+    Set-ItemProperty -Path $gameBarKey -Name 'UseNexusForGameBarEnabled' -Value 0 -Type DWord
+
+    $policyKey = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR'
+    if (-not (Test-Path $policyKey)) { New-Item -Path $policyKey -Force | Out-Null }
+    Set-ItemProperty -Path $policyKey -Name 'AllowGameDVR' -Value 0 -Type DWord
+
+    Log "Game Bar / Game DVR overlay hooks disabled (prevents 'ms-gamingoverlay' link errors after Xbox Game Bar removal)."
 }
 
 function Restore-Default {
@@ -367,6 +395,12 @@ function Test-BloatwareHardened {
     return [bool](-not $installed)
 }
 
+function Test-GameBarOverlayHardened {
+    $appCapture = (Get-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR' -Name 'AppCaptureEnabled' -ErrorAction SilentlyContinue).AppCaptureEnabled
+    $gameDvr    = (Get-ItemProperty -Path 'HKCU:\System\GameConfigStore' -Name 'GameDVR_Enabled' -ErrorAction SilentlyContinue).GameDVR_Enabled
+    return [bool](($appCapture -eq 0) -and ($gameDvr -eq 0))
+}
+
 function Get-PrivacyChecklist {
     @(
         @{ Category = 'Tracking & Data Collection'; Name = 'Telemetry & Data Collection';      Test = 'Test-TelemetryHardened' }
@@ -387,6 +421,7 @@ function Get-PrivacyChecklist {
         @{ Category = 'Security Hardening';         Name = 'UAC Maximum Level';                   Test = 'Test-UacMaxHardened' }
         @{ Category = 'Security Hardening';         Name = 'AutoRun Disabled';                    Test = 'Test-AutoRunHardened' }
         @{ Category = 'Bloatware Removal';          Name = 'Common Bloatware Removed';            Test = 'Test-BloatwareHardened' }
+        @{ Category = 'Bloatware Removal';          Name = 'Game Bar Overlay Hooks Disabled';     Test = 'Test-GameBarOverlayHardened' }
     )
 }
 
