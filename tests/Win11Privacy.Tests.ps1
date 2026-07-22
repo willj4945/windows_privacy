@@ -377,6 +377,27 @@ Describe 'Remove-BloatApp' {
             Should -Invoke Get-AppxPackage -Times 0
         }
     }
+
+    Context 'Game Bar overlay cleanup' {
+        It 'disables Game Bar/DVR hooks when Microsoft.XboxGamingOverlay is removed (Mode 1)' {
+            Remove-BloatApp -Mode 1
+            Should -Invoke Set-ItemProperty -ParameterFilter {
+                $Name -eq 'AppCaptureEnabled' -and $Value -eq 0
+            }
+        }
+        It 'disables Game Bar/DVR hooks when an Xbox overlay package is passed via AppNames' {
+            Remove-BloatApp -AppNames @('Microsoft.Xbox.TCUI')
+            Should -Invoke Set-ItemProperty -ParameterFilter {
+                $Name -eq 'GameDVR_Enabled' -and $Value -eq 0
+            }
+        }
+        It 'does not touch Game Bar/DVR hooks when no Xbox overlay package is removed' {
+            Remove-BloatApp -AppNames @('Microsoft.BingNews')
+            Should -Invoke Set-ItemProperty -Times 0 -ParameterFilter {
+                $Name -eq 'AppCaptureEnabled'
+            }
+        }
+    }
 }
 
 # ---------------------------------------------------------------------------
@@ -702,8 +723,8 @@ Describe 'Test-BloatwareHardened' {
 
 # ---------------------------------------------------------------------------
 Describe 'Get-PrivacyChecklist' {
-    It 'returns 18 checks' {
-        (Get-PrivacyChecklist).Count | Should -Be 18
+    It 'returns 19 checks' {
+        (Get-PrivacyChecklist).Count | Should -Be 19
     }
     It 'every entry names a Test function that actually exists' {
         foreach ($c in Get-PrivacyChecklist) {
