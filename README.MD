@@ -16,8 +16,8 @@
 | Feature | Description |
 | --- | --- |
 | 🖥️ **WinForms GUI** | Tabbed interface — no command-line knowledge required |
-| 📊 **Privacy Scan & Score** | Live scan of your current system against all 18 settings below, with a percentage score and rating — rescans automatically after you apply changes |
-| 🔒 **Privacy hardening** | Disable telemetry, ads, tracking, Recall, Cortana, and Bing |
+| 📊 **Privacy Scan & Score** | Live scan of your current system against all 20 settings below, with a percentage score and rating — rescans automatically after you apply changes |
+| 🔒 **Privacy hardening** | Disable telemetry, ads, tracking, Recall, Copilot, Cortana, and Bing |
 | 📢 **Ad & content controls** | Block suggested apps, lock screen ads, and tailored experiences |
 | 🛡️ **Security hardening** | Disable SMBv1, enable Network Protection and Controlled Folder Access, enforce UAC, block AutoRun |
 | 🗑️ **Debloating** | Remove common bloatware or all non-essential Microsoft Store apps |
@@ -31,7 +31,7 @@
 
 ### Scan Tab
 
-Opens automatically when the app launches and shows your current Privacy Score — the percentage of the 18 settings below that are already hardened, with a color-coded rating (Excellent / Good / Fair / Needs Attention). Click **Run Scan** any time, or apply changes on the other tabs and the score refreshes automatically so you can see it improve.
+Opens automatically when the app launches and shows your current Privacy Score — the percentage of the 20 settings below that are already hardened, with a color-coded rating (Excellent / Good / Fair / Needs Attention). Click **Run Scan** any time, or apply changes on the other tabs and the score refreshes automatically so you can see it improve.
 
 ### Privacy Tab
 
@@ -42,10 +42,13 @@ Opens automatically when the app launches and shows your current Privacy Score �
 | Location Services | Disables the Windows location service |
 | Activity History | Stops local collection and cloud upload of activity data |
 | Windows Recall | Disables the AI screenshot indexing feature via policy registry keys |
+| Windows Copilot | Disables the Copilot assistant/taskbar entry point via policy registry key |
 | Cortana & Bing Search | Removes Bing web results and Cortana from the Start Menu search box |
 | Suggested Apps & Promotions | Stops silent installation of promoted apps and Start Menu ads |
 | Lock Screen Spotlight & Ads | Disables rotating lock screen images and overlay promotions |
 | Tailored Experiences | Disables diagnostic-data-based personalization and Feedback Hub prompts |
+
+> **Note:** the Windows Copilot setting uses the documented "classic" Copilot Group Policy. Newer Copilot experiences rolled out via Windows Insider or other staged channels may not be covered by this policy.
 
 ### Services Tab
 
