@@ -283,7 +283,7 @@ $tabCtrl.Controls.Add($tabPrivacy)
 $grpTracking          = New-Object System.Windows.Forms.GroupBox
 $grpTracking.Text     = "Tracking & Data Collection"
 $grpTracking.Location = New-Object System.Drawing.Point(8, 8)
-$grpTracking.Size     = New-Object System.Drawing.Size(472, 195)
+$grpTracking.Size     = New-Object System.Drawing.Size(472, 223)
 $tabPrivacy.Controls.Add($grpTracking)
 
 $chkTelemetry          = New-Object System.Windows.Forms.CheckBox
@@ -321,16 +321,23 @@ $chkRecall.Location = New-Object System.Drawing.Point(10, 134)
 $chkRecall.Size     = New-Object System.Drawing.Size(450, 22)
 $grpTracking.Controls.Add($chkRecall)
 
+$chkCopilot          = New-Object System.Windows.Forms.CheckBox
+$chkCopilot.Text     = "Disable Windows Copilot"
+$chkCopilot.Checked  = $true
+$chkCopilot.Location = New-Object System.Drawing.Point(10, 162)
+$chkCopilot.Size     = New-Object System.Drawing.Size(450, 22)
+$grpTracking.Controls.Add($chkCopilot)
+
 $chkBingSearch          = New-Object System.Windows.Forms.CheckBox
 $chkBingSearch.Text     = "Disable Cortana & Bing Search in Start Menu"
 $chkBingSearch.Checked  = $true
-$chkBingSearch.Location = New-Object System.Drawing.Point(10, 162)
+$chkBingSearch.Location = New-Object System.Drawing.Point(10, 190)
 $chkBingSearch.Size     = New-Object System.Drawing.Size(450, 22)
 $grpTracking.Controls.Add($chkBingSearch)
 
 $grpAds          = New-Object System.Windows.Forms.GroupBox
 $grpAds.Text     = "Suggested Content & Ads"
-$grpAds.Location = New-Object System.Drawing.Point(8, 211)
+$grpAds.Location = New-Object System.Drawing.Point(8, 239)
 $grpAds.Size     = New-Object System.Drawing.Size(472, 117)
 $tabPrivacy.Controls.Add($grpAds)
 
@@ -486,6 +493,7 @@ $btnApply.Add_Click({
     if ($chkLocation.Checked)         { $taskList.Add({ Disable-Location }) }
     if ($chkActivity.Checked)         { $taskList.Add({ Disable-ActivityHistory }) }
     if ($chkRecall.Checked)           { $taskList.Add({ Disable-Recall }) }
+    if ($chkCopilot.Checked)          { $taskList.Add({ Disable-WindowsCopilot }) }
     if ($chkBingSearch.Checked)       { $taskList.Add({ Disable-CortanaAndBingSearch }) }
     if ($chkSuggestedContent.Checked) { $taskList.Add({ Disable-SuggestedContent }) }
     if ($chkLockScreenAds.Checked)    { $taskList.Add({ Disable-LockScreenAd }) }

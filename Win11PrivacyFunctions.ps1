@@ -78,6 +78,13 @@ function Disable-Recall {
     Log "Windows Recall disabled."
 }
 
+function Disable-WindowsCopilot {
+    $key = 'HKCU:\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot'
+    if (-not (Test-Path $key)) { New-Item -Path $key -Force | Out-Null }
+    Set-ItemProperty -Path $key -Name 'TurnOffWindowsCopilot' -Value 1 -Type DWord
+    Log "Windows Copilot disabled."
+}
+
 function Disable-CortanaAndBingSearch {
     $searchPolicy = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search'
     if (-not (Test-Path $searchPolicy)) { New-Item -Path $searchPolicy -Force | Out-Null }
@@ -323,6 +330,11 @@ function Test-RecallHardened {
     return [bool]($val -eq 1)
 }
 
+function Test-WindowsCopilotHardened {
+    $val = (Get-ItemProperty -Path 'HKCU:\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot' -Name 'TurnOffWindowsCopilot' -ErrorAction SilentlyContinue).TurnOffWindowsCopilot
+    return [bool]($val -eq 1)
+}
+
 function Test-CortanaAndBingSearchHardened {
     $policy = Get-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search' -ErrorAction SilentlyContinue
     $user   = Get-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Search' -ErrorAction SilentlyContinue
@@ -408,6 +420,7 @@ function Get-PrivacyChecklist {
         @{ Category = 'Tracking & Data Collection'; Name = 'Location Services';                 Test = 'Test-LocationHardened' }
         @{ Category = 'Tracking & Data Collection'; Name = 'Activity History';                  Test = 'Test-ActivityHistoryHardened' }
         @{ Category = 'Tracking & Data Collection'; Name = 'Windows Recall';                    Test = 'Test-RecallHardened' }
+        @{ Category = 'Tracking & Data Collection'; Name = 'Windows Copilot';                   Test = 'Test-WindowsCopilotHardened' }
         @{ Category = 'Tracking & Data Collection'; Name = 'Cortana & Bing Search';              Test = 'Test-CortanaAndBingSearchHardened' }
         @{ Category = 'Suggested Content & Ads';    Name = 'Suggested Apps & Promotions';        Test = 'Test-SuggestedContentHardened' }
         @{ Category = 'Suggested Content & Ads';    Name = 'Lock Screen Spotlight & Ads';        Test = 'Test-LockScreenAdHardened' }

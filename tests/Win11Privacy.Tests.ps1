@@ -111,6 +111,21 @@ Describe 'Disable-Recall' {
 }
 
 # ---------------------------------------------------------------------------
+Describe 'Disable-WindowsCopilot' {
+    It 'sets TurnOffWindowsCopilot=1 on the HKCU hive' {
+        Disable-WindowsCopilot
+        Should -Invoke Set-ItemProperty -ParameterFilter {
+            $Path -eq 'HKCU:\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot' -and
+            $Name -eq 'TurnOffWindowsCopilot' -and $Value -eq 1
+        }
+    }
+    It 'creates the registry key when it is missing' {
+        Disable-WindowsCopilot
+        Should -Invoke New-Item -Times 1
+    }
+}
+
+# ---------------------------------------------------------------------------
 Describe 'Disable-CortanaAndBingSearch' {
     It 'disables Cortana via AllowCortana=0' {
         Disable-CortanaAndBingSearch
@@ -542,6 +557,19 @@ Describe 'Test-RecallHardened' {
 }
 
 # ---------------------------------------------------------------------------
+Describe 'Test-WindowsCopilotHardened' {
+    It 'returns $true when TurnOffWindowsCopilot=1' {
+        Mock Get-ItemProperty { [PSCustomObject]@{ TurnOffWindowsCopilot = 1 } } -ParameterFilter {
+            $Path -eq 'HKCU:\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot'
+        }
+        Test-WindowsCopilotHardened | Should -Be $true
+    }
+    It 'returns $false when the policy key is missing' {
+        Test-WindowsCopilotHardened | Should -Be $false
+    }
+}
+
+# ---------------------------------------------------------------------------
 Describe 'Test-CortanaAndBingSearchHardened' {
     It 'returns $true when all three values are hardened' {
         Mock Get-ItemProperty {
@@ -723,8 +751,8 @@ Describe 'Test-BloatwareHardened' {
 
 # ---------------------------------------------------------------------------
 Describe 'Get-PrivacyChecklist' {
-    It 'returns 19 checks' {
-        (Get-PrivacyChecklist).Count | Should -Be 19
+    It 'returns 20 checks' {
+        (Get-PrivacyChecklist).Count | Should -Be 20
     }
     It 'every entry names a Test function that actually exists' {
         foreach ($c in Get-PrivacyChecklist) {
