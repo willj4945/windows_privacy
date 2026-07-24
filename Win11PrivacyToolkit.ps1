@@ -20,7 +20,9 @@ function Get-ToolkitVersion {
             if ($fileVersion -match '^(\d+\.\d+\.\d+)\.0$') { return "v$($Matches[1])" }
             if ($fileVersion) { return "v$fileVersion" }
         }
-    } catch { }
+    } catch {
+        Write-Verbose "Get-ToolkitVersion: failed to read version info: $_"
+    }
     return 'dev build'
 }
 $script:ToolkitVersion = Get-ToolkitVersion
