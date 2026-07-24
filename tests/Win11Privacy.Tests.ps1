@@ -241,6 +241,21 @@ Describe 'Disable-EdgeSync' {
 }
 
 # ---------------------------------------------------------------------------
+Describe 'Disable-DeliveryOptimizationP2P' {
+    It 'sets DODownloadMode=0 on the HKLM policy key' {
+        Disable-DeliveryOptimizationP2P
+        Should -Invoke Set-ItemProperty -ParameterFilter {
+            $Path -eq 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization' -and
+            $Name -eq 'DODownloadMode' -and $Value -eq 0
+        }
+    }
+    It 'creates the registry key when it is missing' {
+        Disable-DeliveryOptimizationP2P
+        Should -Invoke New-Item -Times 1
+    }
+}
+
+# ---------------------------------------------------------------------------
 Describe 'Disable-Smb1Protocol' {
     It 'calls Disable-WindowsOptionalFeature for SMB1Protocol' {
         Disable-Smb1Protocol
@@ -674,6 +689,19 @@ Describe 'Test-EdgeSyncHardened' {
 }
 
 # ---------------------------------------------------------------------------
+Describe 'Test-DeliveryOptimizationHardened' {
+    It 'returns $true when DODownloadMode=0' {
+        Mock Get-ItemProperty { [PSCustomObject]@{ DODownloadMode = 0 } } -ParameterFilter {
+            $Path -eq 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization'
+        }
+        Test-DeliveryOptimizationHardened | Should -Be $true
+    }
+    It 'returns $false when the policy key is missing' {
+        Test-DeliveryOptimizationHardened | Should -Be $false
+    }
+}
+
+# ---------------------------------------------------------------------------
 Describe 'Test-Smb1ProtocolHardened' {
     It 'returns $true when SMB1=0' {
         Mock Get-ItemProperty { [PSCustomObject]@{ SMB1 = 0 } } -ParameterFilter {
@@ -751,8 +779,8 @@ Describe 'Test-BloatwareHardened' {
 
 # ---------------------------------------------------------------------------
 Describe 'Get-PrivacyChecklist' {
-    It 'returns 20 checks' {
-        (Get-PrivacyChecklist).Count | Should -Be 20
+    It 'returns 21 checks' {
+        (Get-PrivacyChecklist).Count | Should -Be 21
     }
     It 'every entry names a Test function that actually exists' {
         foreach ($c in Get-PrivacyChecklist) {

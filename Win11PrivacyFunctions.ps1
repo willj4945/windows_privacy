@@ -154,6 +154,13 @@ function Disable-EdgeSync {
     Log "Edge sync and telemetry disabled."
 }
 
+function Disable-DeliveryOptimizationP2P {
+    $key = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization'
+    if (-not (Test-Path $key)) { New-Item -Path $key -Force | Out-Null }
+    Set-ItemProperty -Path $key -Name 'DODownloadMode' -Value 0 -Type DWord
+    Log "Delivery Optimization peer-to-peer sharing disabled (HTTP only)."
+}
+
 # --- Security Hardening ---
 function Disable-Smb1Protocol {
     Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol -NoRestart -ErrorAction SilentlyContinue | Out-Null
@@ -371,6 +378,11 @@ function Test-EdgeSyncHardened {
     return [bool](($edge.SyncDisabled -eq 1) -and ($edge.MetricsReportingEnabled -eq 0))
 }
 
+function Test-DeliveryOptimizationHardened {
+    $val = (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization' -Name 'DODownloadMode' -ErrorAction SilentlyContinue).DODownloadMode
+    return [bool]($val -eq 0)
+}
+
 function Test-Smb1ProtocolHardened {
     $val = (Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters' -Name 'SMB1' -ErrorAction SilentlyContinue).SMB1
     return [bool]($val -eq 0)
@@ -428,6 +440,7 @@ function Get-PrivacyChecklist {
         @{ Category = 'Microsoft Services';         Name = 'OneDrive Integration';               Test = 'Test-OneDriveHardened' }
         @{ Category = 'Microsoft Services';         Name = 'Background Apps';                    Test = 'Test-BackgroundAppHardened' }
         @{ Category = 'Microsoft Services';         Name = 'Edge Sync & Telemetry';               Test = 'Test-EdgeSyncHardened' }
+        @{ Category = 'Microsoft Services';         Name = 'Delivery Optimization P2P';            Test = 'Test-DeliveryOptimizationHardened' }
         @{ Category = 'Security Hardening';         Name = 'SMBv1 Disabled';                     Test = 'Test-Smb1ProtocolHardened' }
         @{ Category = 'Security Hardening';         Name = 'Network Protection';                  Test = 'Test-NetworkProtectionHardened' }
         @{ Category = 'Security Hardening';         Name = 'Controlled Folder Access';            Test = 'Test-ControlledFolderAccessHardened' }

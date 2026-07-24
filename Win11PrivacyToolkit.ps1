@@ -372,7 +372,7 @@ $tabCtrl.Controls.Add($tabServices)
 $grpServices          = New-Object System.Windows.Forms.GroupBox
 $grpServices.Text     = "Microsoft Services"
 $grpServices.Location = New-Object System.Drawing.Point(8, 8)
-$grpServices.Size     = New-Object System.Drawing.Size(472, 118)
+$grpServices.Size     = New-Object System.Drawing.Size(472, 146)
 $tabServices.Controls.Add($grpServices)
 
 $chkOneDrive          = New-Object System.Windows.Forms.CheckBox
@@ -395,6 +395,13 @@ $chkEdge.Checked  = $true
 $chkEdge.Location = New-Object System.Drawing.Point(10, 78)
 $chkEdge.Size     = New-Object System.Drawing.Size(450, 22)
 $grpServices.Controls.Add($chkEdge)
+
+$chkDeliveryOpt          = New-Object System.Windows.Forms.CheckBox
+$chkDeliveryOpt.Text     = "Disable Delivery Optimization Peer-to-Peer Updates"
+$chkDeliveryOpt.Checked  = $true
+$chkDeliveryOpt.Location = New-Object System.Drawing.Point(10, 106)
+$chkDeliveryOpt.Size     = New-Object System.Drawing.Size(450, 22)
+$grpServices.Controls.Add($chkDeliveryOpt)
 
 # =============================================================================
 # TAB: Security
@@ -501,6 +508,7 @@ $btnApply.Add_Click({
     if ($chkOneDrive.Checked)         { $taskList.Add({ Disable-OneDrive }) }
     if ($chkBackground.Checked)       { $taskList.Add({ Disable-BackgroundApp }) }
     if ($chkEdge.Checked)             { $taskList.Add({ Disable-EdgeSync }) }
+    if ($chkDeliveryOpt.Checked)      { $taskList.Add({ Disable-DeliveryOptimizationP2P }) }
     if ($chkSmb1.Checked)             { $taskList.Add({ Disable-Smb1Protocol }) }
     if ($chkNetProtect.Checked)       { $taskList.Add({ Enable-NetworkProtection }) }
     if ($chkCfa.Checked)              { $taskList.Add({ Enable-ControlledFolderAccess }) }

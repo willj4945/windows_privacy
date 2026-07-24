@@ -16,7 +16,7 @@
 | Feature | Description |
 | --- | --- |
 | 🖥️ **WinForms GUI** | Tabbed interface — no command-line knowledge required |
-| 📊 **Privacy Scan & Score** | Live scan of your current system against all 20 settings below, with a percentage score and rating — rescans automatically after you apply changes |
+| 📊 **Privacy Scan & Score** | Live scan of your current system against all 21 settings below, with a percentage score and rating — rescans automatically after you apply changes |
 | 🔒 **Privacy hardening** | Disable telemetry, ads, tracking, Recall, Copilot, Cortana, and Bing |
 | 📢 **Ad & content controls** | Block suggested apps, lock screen ads, and tailored experiences |
 | 🛡️ **Security hardening** | Disable SMBv1, enable Network Protection and Controlled Folder Access, enforce UAC, block AutoRun |
@@ -31,7 +31,7 @@
 
 ### Scan Tab
 
-Opens automatically when the app launches and shows your current Privacy Score — the percentage of the 20 settings below that are already hardened, with a color-coded rating (Excellent / Good / Fair / Needs Attention). Click **Run Scan** any time, or apply changes on the other tabs and the score refreshes automatically so you can see it improve.
+Opens automatically when the app launches and shows your current Privacy Score — the percentage of the 21 settings below that are already hardened, with a color-coded rating (Excellent / Good / Fair / Needs Attention). Click **Run Scan** any time, or apply changes on the other tabs and the score refreshes automatically so you can see it improve.
 
 ### Privacy Tab
 
@@ -57,6 +57,7 @@ Opens automatically when the app launches and shows your current Privacy Score �
 | OneDrive Integration | Disables OneDrive file sync policy and stops the process |
 | Background Apps | Globally disables background access for all applications |
 | Edge Sync & Telemetry | Disables Edge profile sync and metrics reporting via policy |
+| Delivery Optimization P2P | Sets Windows Update to HTTP-only, stopping peer-to-peer upload/download of update and app packages |
 
 ### Security Tab
 
