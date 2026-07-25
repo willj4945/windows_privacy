@@ -31,7 +31,7 @@ jobs:
     env:
       HAS_SIGNING_CERT: ${{ secrets.WINDOWS_CERTIFICATE != '' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Resolve version from tag
         id: version
@@ -104,7 +104,7 @@ jobs:
           Set-Content -Path release-notes.md -Value "$status`n`n$verifyBlock" -Encoding UTF8
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             Win11PrivacyToolkit.exe
