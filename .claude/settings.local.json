@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git checkout *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git pull *)",
+      "Bash(git tag *)",
+      "Bash(gh run *)",
+      "Bash(gh issue *)",
+      "PowerShell(Invoke-Pester -Path 'tests/Win11Privacy.Tests.ps1' -Output Detailed)",
+      "PowerShell(Install-Module -Name Pester -MinimumVersion 5.0 -Force -Scope CurrentUser -SkipPublisherCheck 2>&1 | Out-String)",
+      "PowerShell(New-Item -ItemType Directory -Force -Path 'C:\\\\Users\\\\Will_\\\\Documents\\\\WindowsPowerShell\\\\Modules' | Out-Null; Install-Module -Name Pester -MinimumVersion 5.0 -Force -Scope CurrentUser -SkipPublisherCheck 2>&1 | Out-String)",
+      "Read(//c/Users/Will_/Documents/WindowsPowerShell/**)",
+      "Bash(gh pr *)",
+      "Bash(gh api *)",
+      "Bash(gh auth *)",
+      "Bash(git -C c:/Users/Will_/Projects/windows_privacy log --oneline -20)",
+      "Bash(git fetch *)",
+      "Bash(pwsh -NoProfile -Command ' *)",
+      "PowerShell($env:PSModulePath -split ';')",
+      "PowerShell(Invoke-ScriptAnalyzer -Path Win11PrivacyToolkit.ps1 -Severity Error,Warning)",
+      "PowerShell(\\([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent\\(\\)\\).IsInRole\\([Security.Principal.WindowsBuiltInRole]::Administrator\\))",
+      "Bash(mkdir -p \"C:/Users/Will_/AppData/Local/Temp/claude/c--Users-Will--Projects-windows-privacy/feb93cc4-4a0a-4dfa-bbe3-20580f5147ee/scratchpad\")",
+      "Bash(cp Win11PrivacyToolkit.ps1 \"C:/Users/Will_/AppData/Local/Temp/claude/c--Users-Will--Projects-windows-privacy/feb93cc4-4a0a-4dfa-bbe3-20580f5147ee/scratchpad/HeadlessTest.ps1\")",
+      "PowerShell(powershell.exe -NoProfile -STA -File \"C:\\\\Users\\\\Will_\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Will--Projects-windows-privacy\\\\feb93cc4-4a0a-4dfa-bbe3-20580f5147ee\\\\scratchpad\\\\HeadlessTest.ps1\")",
+      "Bash(gh label *)",
+      "Bash(git ls-remote *)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "Bash(git -C \"c:\\\\Users\\\\Will_\\\\Projects\\\\windows_privacy\" status --short)",
+      "Bash(git -C \"c:\\\\Users\\\\Will_\\\\Projects\\\\windows_privacy\" branch --show-current)"
+    ]
+  }
+}
